@@ -31,20 +31,20 @@ ALLOWED_HOSTS = [
     '*',
     'https://leadmanager-8fttm24wx-aneeshni47.vercel.app',
     'https://leadmanager-ui.vercel.app/'
-    'https://leadmanager-api-639ef0e635a1.herokuapp.com/'
+    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com/'
     ]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000/*',
     'http://localhost:3000/*',
-    'https://leadmanager-api-639ef0e635a1.herokuapp.com'
+    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
     
 ]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://leadmanager-8fttm24wx-aneeshni47.vercel.app',
     'https://leadmanager-ui.vercel.app',
-    'https://leadmanager-api-639ef0e635a1.herokuapp.com'
+    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
 ]
 
 
@@ -80,11 +80,14 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'optic_invoicer_api.organization_middleware.OrganizationMiddleware',
 ]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 FRONTEND_URL = 'https://yourfrontendurl.com'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
