@@ -1,16 +1,17 @@
-"""
-ASGI config for optic_invoicer_api project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
-"""
-
+# optic_invoicer_api/asgi.py
 import os
-
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+import invoices.routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'optic_invoicer_api.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "optic_invoicer_api.settings")
 
-application = get_asgi_application()
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            invoices.routing.websocket_urlpatterns
+        )
+    ),
+})
