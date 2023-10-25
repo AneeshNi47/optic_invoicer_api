@@ -40,7 +40,8 @@ class LoginSerializer(serializers.Serializer):
 
             # If the user is not associated with either, raise an error
             else:
-                raise serializers.ValidationError("User is not associated with Staff or Customer.")
+                data['user_type'] = "admin"
+                return data
 
         raise serializers.ValidationError("Incorrect Credentials.")
 
@@ -58,7 +59,8 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     staff_details = serializers.SerializerMethodField(read_only=True)
-    customer_details = serializers.SerializerMethodField(read_only=True)
+    customer_details = serializers.SerializerMethodField(read_only=True)  # Assuming you have a method for admin_details
+    user_type = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -69,7 +71,8 @@ class UserSerializer(serializers.ModelSerializer):
             'groups',
             'is_superuser',
             'staff_details',
-            'customer_details'
+            'customer_details',
+            'user_type'
         )
 
     def get_staff_details(self, obj):
@@ -85,3 +88,13 @@ class UserSerializer(serializers.ModelSerializer):
             return CustomerSerializer(customer_instance).data
         except Customer.DoesNotExist:
             return None
+        
+    def get_user_type(self, obj):
+        if obj.is_superuser:
+            return 'admin'
+        elif hasattr(obj, 'staff'):
+            return 'staff'
+        elif hasattr(obj, 'customer'):
+            return 'customer'
+        else:
+            return 'unknown'

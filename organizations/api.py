@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from .models import Organization
 from rest_framework.views import APIView
-from .serializers import OrganizationSerializer
+from .serializers import OrganizationSerializer, OrganizationStaffSerializer
 
 class OrganizationViewSet(viewsets.ModelViewSet):
     permission_classes = [
@@ -36,3 +36,14 @@ class GetOrganizationView(APIView):
             return Response(serializer.data)
         else:
              return Response({'detail': 'Organization not found for the user.'}, status=status.HTTP_404_NOT_FOUND)
+
+class CreateOrganizationAndStaffView(APIView):
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        serializer = OrganizationStaffSerializer(data=request.data,context={'request': request})
+        if serializer.is_valid():
+            organization = serializer.save(owner=request.user)
+            return Response({'organization_id': organization.id}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
