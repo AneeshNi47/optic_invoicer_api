@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Invoice
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
+from inventory.serializers import InventorySerializer
 
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
@@ -28,6 +29,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
 class InvoiceGetSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
     prescription = PrescriptionSerializer()
+    items = InventorySerializer(many=True, read_only=True) 
 
     class Meta:
         model = Invoice

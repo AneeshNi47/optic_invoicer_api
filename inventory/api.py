@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Inventory
 from .serializers import InventorySerializer
@@ -24,3 +25,27 @@ class InventoryViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class InventorySearchView(APIView):
+    """
+    Search inventory based on SKU or name.
+    """
+
+    def get(self, request):
+        sku = request.query_params.get('sku', None)
+        name = request.query_params.get('name', None)
+        type = request.query_params.get('type', None)
+
+        if not (sku or name or type):
+            return Response({"error": "Provide name, sku or type for searching."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if sku:
+            items = Inventory.objects.filter(store_sku__icontains=sku)
+        elif name:
+            items = Inventory.objects.filter(name__icontains=name)
+        elif type:
+            items = Inventory.objects.filter(item_type__icontains=type)
+
+        serializer = InventorySerializer(items, many=True)
+        return Response(serializer.data)
