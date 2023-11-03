@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='inventory',
+            name='item_type',
             field=models.CharField(choices=[('Lens', 'Lens'), ('Frames', 'Frames'), ('Other', 'Other')], default='Lens', max_length=15),
 
         ),
