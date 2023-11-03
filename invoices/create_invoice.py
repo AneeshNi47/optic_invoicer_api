@@ -63,6 +63,7 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
     frame_table_header = ["SKU", "Item", "Description", "Price"]
     frame_table_x_position = 60
     frame_table_data = [(item.SKU, item.name, item.description, str(item.sale_value)) for item in invoice.items.all() if item.item_type == "Frames"]
+
     
     if len(frame_table_data) == 0:
         frame_table_data.append(("", "", "", ""))
@@ -73,6 +74,7 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
     lens_table_header = ["S.no", "Item", "Description", "Price"]
     lens_table_x_position = 60
     lens_table_data =[(item.SKU, item.name, item.description, str(item.sale_value)) for item in invoice.items.all() if item.item_type == "Lens"]
+
     
     if len(lens_table_data) == 0:
         lens_table_data.append(("", "", "", ""))

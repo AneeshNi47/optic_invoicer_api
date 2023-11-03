@@ -50,3 +50,4 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f'{self.SKU} {self.item_type} {self.store_sku}'
+        return f'{self.name} {self.item_type} {self.store_sku}'
