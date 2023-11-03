@@ -31,6 +31,10 @@ class BulkInventoryCreateView(APIView):
     serializer_class = BulkInventorySerializer
 
     def post(self, request, *args, **kwargs):
+        organization = request.get_organization() 
+        if not organization:
+            return Response({'error': 'User is not associated with any organization.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
