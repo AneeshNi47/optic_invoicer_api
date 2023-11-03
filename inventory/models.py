@@ -11,6 +11,12 @@ class Inventory(models.Model):
     cost_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Cost Value")
     brand = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    TYPE_CHOICES = [
+        ("Frames", "Frames"),
+        ("Lens", "Lens"),
+        ("Others", "Others")
+    ]
+    item_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="Frames")
 
     
     # Default fields
@@ -32,4 +38,4 @@ class Inventory(models.Model):
         super(Inventory, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f'{self.name} {self.item_type} {self.store_sku}'

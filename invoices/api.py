@@ -1,10 +1,16 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
 from .models import Invoice
 from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer
 from rest_framework.response import Response
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
+from django.http import HttpResponse
+from io import BytesIO
+from .models import Invoice
+from .create_invoice import create_invoice_pdf
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceGetSerializer
@@ -100,4 +106,20 @@ class CreateInvoiceView(APIView):
         invoice = invoice_serializer.save()
         return Response(invoice_serializer.data, status=status.HTTP_200_OK)
 
+class InvoicePDFView(APIView):
+    serializer_class = InvoiceGetSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, invoice_id):
+        invoice = get_object_or_404(Invoice, id=invoice_id)
+
+        tear_away = request.GET.get('tear_away', True)
+        only_tear_away = request.GET.get('only_tear_away', True)
+        # Check if the user's organization matches the invoice's organization
+        print(request.get_organization().id)
+        if invoice.organization != request.get_organization():
+            raise PermissionDenied
+        setattr(invoice, "organization", request.get_organization())
+        response = create_invoice_pdf("etst", invoice, tear_away,only_tear_away)
+
+        return response
