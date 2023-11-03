@@ -14,31 +14,55 @@ class LoginSerializer(serializers.Serializer):
 
         # Check if the user is authenticated and is active
         if user and user.is_active:
-            # Check if the user is associated with a Staff object
+            # If the user is not a superuser, proceed with the organization check
+            if not user.is_superuser:
+                organization = None
+
+                # Check if the user is associated with a Staff object
+                if hasattr(user, 'staff'):
+                    staff_instance = user.staff
+                    organization = staff_instance.organization
+
+                # Check if the user is associated with a Customer object
+                elif hasattr(user, 'customer'):
+                    customer_instance = user.customer
+                    organization = customer_instance.organization
+
+                # Ensure the user is associated with an organization
+                if organization is None:
+                    raise serializers.ValidationError("User is not associated with any organization.")
+
+                # Check if the organization is active
+                if not organization.is_active:
+                    raise serializers.ValidationError("The associated organization is not active.")
+
+            # User is associated with a Staff object
             if hasattr(user, 'staff'):
                 staff_instance = user.staff
                 data['staff_details'] = {
                     'first_name': staff_instance.first_name,
                     'last_name': staff_instance.last_name,
                     'designation': staff_instance.designation,
+                    'organization': staff_instance.organization,
                     # ... add any other fields you need ...
                 }
                 data['user_type'] = "staff"
                 return data
 
-            # Check if the user is associated with a Customer object
+            # User is associated with a Customer object
             elif hasattr(user, 'customer'):
                 customer_instance = user.customer
                 data['customer_details'] = {
                     'first_name': customer_instance.first_name,
                     'last_name': customer_instance.last_name,
                     'phone': customer_instance.phone,
+                    'organization': customer_instance.organization,
                     # ... add any other fields you need ...
                 }
                 data['user_type'] = "customer"
                 return data
 
-            # If the user is not associated with either, raise an error
+            # User is not associated with either Staff or Customer, assume Admin
             else:
                 data['user_type'] = "admin"
                 return data
@@ -50,12 +74,12 @@ class LoginSerializer(serializers.Serializer):
 class StaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = Staff
-        fields = ('first_name', 'last_name', 'designation', 'phone', 'email', 'staff_superuser')
+        fields = ('first_name', 'last_name', 'designation', 'phone','organization', 'email', 'staff_superuser')
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ('first_name', 'last_name', 'phone', 'email', 'gender')
+        fields = ('first_name', 'last_name', 'phone', 'email','organization', 'gender')
 
 class UserSerializer(serializers.ModelSerializer):
     staff_details = serializers.SerializerMethodField(read_only=True)

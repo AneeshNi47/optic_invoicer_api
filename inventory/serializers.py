@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import Inventory
 
 class InventorySerializer(serializers.ModelSerializer):
+    item_type = serializers.ChoiceField(choices=Inventory.ITEM_TYPE_CHOICES)
+
 
     class Meta:
         model = Inventory
@@ -28,3 +30,26 @@ class InventorySerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['updated_by'] = user
         return super().update(instance, validated_data)
+
+class BulkInventorySerializer(serializers.Serializer):
+    inventories = InventorySerializer(many=True)
+
+    def create(self, validated_data):
+        org_id = self.context['request'].get_organization()
+
+        # Set organization_id for each item
+        inventories_data = validated_data.pop('inventories')
+        inventories_objects = []
+        for item in inventories_data:
+            inventory = Inventory(organization=org_id, **item)
+            # Generate and set the SKU
+            inventory.SKU = inventory.generate_sku()
+            # Append the Inventory object to the list
+            inventories_objects.append(inventory)
+        return Inventory.objects.bulk_create(inventories_objects)
+
+    def to_representation(self, obj):
+        # obj here should be a list of Inventory instances
+        # so we'll serialize it using the InventorySerializer
+        serializer = InventorySerializer(obj, many=True)
+        return {'inventories': serializer.data}

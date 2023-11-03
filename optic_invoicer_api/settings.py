@@ -43,7 +43,7 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://leadmanager-8fttm24wx-aneeshni47.vercel.app',
-    'https://optic-invoicer-ui.vercel.app/',
+    'https://optic-invoicer-ui.vercel.app',
     'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
 ]
 
