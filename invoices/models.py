@@ -15,7 +15,7 @@ class Invoice(models.Model):
     items=models.ManyToManyField(Inventory, related_name="invoice_items",null=True, blank=True,)
     remarks = models.TextField(null=True, blank=True)
     delivery_date = models.DateField(null=True, blank=True)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     discount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True,default=0)
     advance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -60,17 +60,15 @@ class Invoice(models.Model):
             return f"{prefix}NT{year}{count:05}"
 
     def save(self, *args, **kwargs):
-        print("saving")
         # If the invoice doesn't have an invoice number, generate one
         if not self.invoice_number:
             self.invoice_number = self.generate_invoice_number()
         
         total_price = 0 
         for item in self.items.all():
+            print(item.sale_value)
             total_price += item.sale_value
 
         self.total = total_price - self.discount
         self.balance = self.total - self.advance
-        print(self.total)
-        print(self.balance)
         super(Invoice, self).save(*args, **kwargs)

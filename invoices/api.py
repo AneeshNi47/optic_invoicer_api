@@ -35,45 +35,22 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
 
 class CreateInvoiceView(APIView):
+    
     def post(self, request):
-        customer_data = request.data.get('customer')
-        prescription_data = request.data.get('prescription')
-        organization = request.get_organization()
-        customer_data['organization'] = organization
-        prescription_data['organization'] = organization
-        # Handle Customer
-        customer_id = customer_data.get('id')
-        if customer_id:
-            # Update existing customer
-            print("customer already available")
-            customer_instance = Customer.objects.get(id=customer_id)
-            customer_data['id'] = customer_instance.id
-            print("customer already available",customer_instance.phone)
-            customer_serializer = CustomerSerializer(customer_instance, data=customer_data, context={'request': request})
+        # Prepare data for serialization
+        data = request.data
+        data['organization'] = request.get_organization()
+        # Serialize and validate data
+        serializer = InvoiceCreateSerializer(data=data, context={'request': request})
+        # Check validation status
+        if serializer.is_valid():
+            # Data is valid, create Invoice
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            # Create new customer
-            customer_data['organization'] = organization
-            customer_serializer = CustomerSerializer(data=customer_data, context={'request': request})
-        if not customer_serializer.is_valid():
-            print("customer creation error")
-            return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        customer = customer_serializer.save(organization=request.get_organization())
-        # Handle Prescription
-        prescription_serializer = PrescriptionSerializer(data=prescription_data, context={'request': request})
-        if not prescription_serializer.is_valid():
-            return Response(prescription_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Data is invalid, return error
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        prescription = prescription_serializer.save(customer=customer, organization=request.get_organization())
-        # Create Invoice
-        invoice_data = request.data.copy()
-        invoice_data['customer'] = customer.id
-        invoice_data['prescription'] = prescription.id
-        invoice_serializer = InvoiceCreateSerializer(data=invoice_data, context={'request': request})
-        if not invoice_serializer.is_valid():
-            return Response(invoice_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        invoice = invoice_serializer.save(organization=request.get_organization(), created_by=request.user)
-        return Response(invoice_serializer.data, status=status.HTTP_201_CREATED)
     
     def put(self, request, *args, **kwargs):
         invoice_id = request.data.get('id')

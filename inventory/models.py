@@ -1,5 +1,8 @@
 from django.db import models
 from django.conf import settings
+import random
+from datetime import datetime
+
 
 class Inventory(models.Model):
     SKU = models.CharField(max_length=255, unique=True, verbose_name="Stock Keeping Unit", blank=True, null=True)
@@ -9,6 +12,12 @@ class Inventory(models.Model):
     qty = models.PositiveIntegerField(default=0, verbose_name="Quantity")
     sale_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Sale Value")
     cost_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Cost Value")
+    ITEM_TYPE_CHOICES = [
+        ("Lens", "Lens"),
+        ("Frames", "Frames"),
+        ("Other", "Other")
+    ]
+    item_type = models.CharField(max_length=15, choices=ITEM_TYPE_CHOICES, default="Lens")
     brand = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     TYPE_CHOICES = [
@@ -29,7 +38,9 @@ class Inventory(models.Model):
     def generate_sku(self):
         prefix = self.organization.name[:4].upper()
         existing_skus = Inventory.objects.filter(SKU__startswith=prefix).count()
-        new_sku = f"{prefix}{existing_skus + 1:05}"  # Generates a number with 5 digits, padded with zeros if needed
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')  # Year, month, day, hour, minute, second, microsecond
+        random_value = random.randint(100, 999)  # A random 3-digit number
+        new_sku = f"{prefix}{existing_skus + 1:05}{timestamp}{random_value}"  # Combines count, timestamp, and random value
         return new_sku
 
     def save(self, *args, **kwargs):
@@ -38,4 +49,5 @@ class Inventory(models.Model):
         super(Inventory, self).save(*args, **kwargs)
 
     def __str__(self):
+        return f'{self.SKU} {self.item_type} {self.store_sku}'
         return f'{self.name} {self.item_type} {self.store_sku}'
