@@ -2,6 +2,7 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from staff.models import Staff
+from organizations.serializers import OrganizationSerializer
 from customers.models import Customer
 
 
@@ -39,11 +40,13 @@ class LoginSerializer(serializers.Serializer):
             # User is associated with a Staff object
             if hasattr(user, 'staff'):
                 staff_instance = user.staff
+                org_serializer = OrganizationSerializer(staff_instance.organization)
+                
                 data['staff_details'] = {
                     'first_name': staff_instance.first_name,
                     'last_name': staff_instance.last_name,
                     'designation': staff_instance.designation,
-                    'organization': staff_instance.organization,
+                    'organization': org_serializer.data
                     # ... add any other fields you need ...
                 }
                 data['user_type'] = "staff"
@@ -72,11 +75,13 @@ class LoginSerializer(serializers.Serializer):
 
     
 class StaffSerializer(serializers.ModelSerializer):
+    organization = OrganizationSerializer()
     class Meta:
         model = Staff
         fields = ('first_name', 'last_name', 'designation', 'phone','organization', 'email', 'staff_superuser')
 
 class CustomerSerializer(serializers.ModelSerializer):
+    organization = OrganizationSerializer()
     class Meta:
         model = Customer
         fields = ('first_name', 'last_name', 'phone', 'email','organization', 'gender')
