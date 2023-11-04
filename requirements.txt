@@ -83,6 +83,5 @@ urllib3==1.26.16
 validators==0.21.2
 webencodings==0.5.1
 whitenoise==6.5.0
-xhtml2pdf==0.2.11
 zope.interface==6.0
 
