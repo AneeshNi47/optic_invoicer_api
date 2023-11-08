@@ -1,8 +1,13 @@
 from rest_framework import serializers
 from django.db import transaction
+from django.conf import settings
 from .models import Organization, Payment, Subscription
 from staff.models import Staff
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,23 +38,50 @@ class StaffSerializer(serializers.ModelSerializer):
         return staff
 
 class OrganizationStaffSerializer(serializers.Serializer):
+    
     organization = OrganizationSerializer()
     staff = StaffSerializer()
 
     def create(self, validated_data):
         organization_data = validated_data.pop('organization')
         staff_data = validated_data.pop('staff')
+        username = staff_data['user']['username']
+        password = User.objects.make_random_password(length=9)
         with transaction.atomic():
             organization = Organization.objects.create(**organization_data,owner=self.context['request'].user)
+            staff_data['user']['password'] = password
             staff = StaffSerializer().create(staff_data, organization=organization)
             staff.organization = organization
             staff.save()
+
+
+            # Update the related User instance
+            user = staff.user
+            user.first_name = staff_data['first_name']
+            user.last_name = staff_data['last_name']
+            user.email = staff_data['email']
+            user.save()
+
             # Create a subscription instance with default values
             Subscription.objects.create(
                 organization=organization,
                 subscription_type='Demo',
                 status='Trial'
             )
+        
+            # Send a welcome email with the generated password
+            mail_subject = 'Welcome to Our Platform'
+            html_message = render_to_string('email/welcome_email.html', {
+                'staff': staff_data,
+                'organization': organization,
+                'password': password,
+                'username': username,
+                'frontend_url': settings.FRONTEND_URL
+            })
+            plain_message = strip_tags(html_message)
+
+            send_mail(mail_subject, plain_message, settings.EMAIL_HOST_USER, [staff_data['email']],html_message=html_message)
+
         saved_organization =  {
                 "name": organization.name,
                 "is_active": organization.is_active,
