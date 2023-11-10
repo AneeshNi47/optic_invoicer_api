@@ -28,6 +28,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
 
 
 class BulkInventoryCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = BulkInventorySerializer
 
     def post(self, request, *args, **kwargs):
@@ -43,24 +44,27 @@ class BulkInventoryCreateView(APIView):
 
 
 class InventorySearchView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     """
     Search inventory based on SKU or name.
     """
 
     def get(self, request):
+        organization = request.get_organization()
         sku = request.query_params.get('sku', None)
         name = request.query_params.get('name', None)
         type = request.query_params.get('type', None)
 
         if not (sku or name or type):
             return Response({"error": "Provide name, sku or type for searching."}, status=status.HTTP_400_BAD_REQUEST)
-
+        queryset = Inventory.objects.filter(organization=organization)
         if sku:
-            items = Inventory.objects.filter(store_sku__icontains=sku)
+            items = queryset.filter(store_sku__icontains=sku)
         elif name:
-            items = Inventory.objects.filter(name__icontains=name)
+            items = queryset.filter(name__icontains=name)
         elif type:
-            items = Inventory.objects.filter(item_type__icontains=type)
+            items = queryset.filter(item_type__icontains=type)
 
         serializer = InventorySerializer(items, many=True)
         return Response(serializer.data)

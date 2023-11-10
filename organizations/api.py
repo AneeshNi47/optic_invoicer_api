@@ -23,6 +23,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
 class GetOrganizationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     """
     Get the User Current Organization.
     """
@@ -49,6 +50,7 @@ class CreateOrganizationAndStaffView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OrganizationListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
         organizations = Organization.objects.all()

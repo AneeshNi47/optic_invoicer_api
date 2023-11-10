@@ -41,21 +41,23 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomerSearchView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     """
     Search customers based on email or phone.
     """
 
     def get(self, request):
+        organization = request.get_organization()
         phone = request.query_params.get('phone', None)
         email = request.query_params.get('email', None)
 
         if not (phone or email):
             return Response({"error": "Provide email or phone for searching."}, status=status.HTTP_400_BAD_REQUEST)
-
+        queryset = Customer.objects.filter(organization=organization)
         if phone:
-            customers = Customer.objects.filter(phone__icontains=phone)
+            customers = queryset.filter(phone__icontains=phone)
         elif email:
-            customers = Customer.objects.filter(email__icontains=email)
+            customers = queryset.filter(email__icontains=email)
 
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data)
