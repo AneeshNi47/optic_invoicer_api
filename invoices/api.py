@@ -35,6 +35,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
 
 class CreateInvoiceView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request):
         # Prepare data for serialization

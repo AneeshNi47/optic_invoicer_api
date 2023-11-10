@@ -46,11 +46,11 @@ class Customer(models.Model):
 class Prescription(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='prescriptions')
 
-    SPHERE_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(-20.0, 20.0, 0.25))]
-    CYLINDER_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(-10.0, 10.0, 0.25))]
+    SPHERE_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(-20.0, 20.0, 0.01))]
+    CYLINDER_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(-10.0, 10.0, 0.01))]
     AXIS_CHOICES = [(i, str(i)) for i in range(1, 181)]
-    PRISM_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(0.0, 10.0, 0.25))]  # Example range and step for PRISM
-    ADD_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(0.0, 4.0, 0.25))]     # Example range and step for ADD
+    PRISM_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(0.0, 10.0, 0.01))]  # Example range and step for PRISM
+    ADD_CHOICES = [(i, f"{i:.2f}") for i in list(float_range(0.0, 4.0, 0.01))]     # Example range and step for ADD
 
     left_sphere = models.FloatField(choices=SPHERE_CHOICES, null=True, blank=True)
     right_sphere = models.FloatField(choices=SPHERE_CHOICES, null=True, blank=True)
