@@ -9,17 +9,13 @@ class Command(BaseCommand):
         parser.add_argument('email', type=str, help='The email address to send the test email to.')
 
     def handle(self, *args, **kwargs):
-        print("starting")
         email = kwargs['email']
         subject = 'Test Email from Django'
         message = 'This is a test email sent from the Django application.'
         email_from = settings.DEFAULT_FROM_EMAIL
         recipient_list = [email]
-        print(email,subject,message,email_from,recipient_list)
         try:
-            print('Attempting to send email...')
             send_mail(subject, message, email_from, recipient_list, auth_password=settings.EMAIL_HOST_PASSWORD, auth_user=settings.EMAIL_HOST_USER)
-            print('Email sent successfully.')
             self.stdout.write(self.style.SUCCESS('Successfully sent test email to %s' % email))
         except Exception as e:
             logging.error('Error sending email: %s', e)

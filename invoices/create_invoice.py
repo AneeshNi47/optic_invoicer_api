@@ -96,7 +96,6 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
 
     if (tear_away == True):
         c.setStrokeColorRGB(*hex_to_rgb(line_hex_color_code)) 
-        print(tear_away)
         # Tear-away section
         tearaway_data = {
             'Invoice No': invoice.invoice_number,

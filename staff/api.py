@@ -36,7 +36,7 @@ def send_invitation(request):
     return Response({'detail': 'Invitation sent successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])
+@permission_classes([permissions.IsAuthenticated])
 def register_staff(request, token):
     try:
         invitation = Invitation.objects.get(token=token)

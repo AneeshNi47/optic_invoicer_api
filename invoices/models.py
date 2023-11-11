@@ -66,7 +66,6 @@ class Invoice(models.Model):
         
         total_price = 0 
         for item in self.items.all():
-            print(item.sale_value)
             total_price += item.sale_value
 
         self.total = total_price - self.discount
