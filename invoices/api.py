@@ -30,8 +30,15 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         organization = self.request.get_organization()
         # Ensure the user has an associated staff profile and organization
         if hasattr(user, "staff") and organization:
-            return Invoice.objects.filter(organization=organization).select_related('customer', 'prescription')
+            return Invoice.objects.filter(organization=organization, is_active=True).select_related('customer', 'prescription')
         return Invoice.objects.none()  # Return an empty queryset if conditions aren't met
+
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CreateInvoiceView(APIView):
@@ -94,7 +101,6 @@ class InvoicePDFView(APIView):
         tear_away = request.GET.get('tear_away', True)
         only_tear_away = request.GET.get('only_tear_away', True)
         # Check if the user's organization matches the invoice's organization
-        print(request.get_organization().id)
         if invoice.organization != request.get_organization():
             raise PermissionDenied
         setattr(invoice, "organization", request.get_organization())
