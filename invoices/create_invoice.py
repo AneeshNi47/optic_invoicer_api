@@ -1,11 +1,11 @@
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, A6,landscape
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from django.http import HttpResponse
 from .create_invoice_pdf_helpers import draw_footer,draw_header,draw_invoice_info,draw_tearaway_section,draw_table_generator, create_custom_grid, hex_to_rgb
 
 
-def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
+def create_invoice_pdf(filename, invoice):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -23,7 +23,7 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
     c.rect(0, 0, width, height, stroke=1, fill=1)  # Draw rectangle border
 
     # Add logos
-    logo_path_left = "organization_logos/logo_round_png.png"  # Update this with the path to your left logo file
+    logo_path_left = invoice.organization.logo  # Update this with the path to your left logo file
     logo_path_right = "organization_logos/optic_invoicer_icon2.png"  # Update this with the path to your right logo file
     c.drawImage(logo_path_left, 10, height - 60, width=50, height=50)  # Draw left logo
     c.drawImage(logo_path_right, width - 90, height - 60, width=50, height=50)  # Draw right logo
@@ -94,17 +94,6 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
     ]
     next_table_y_position = create_custom_grid(c,grid_structure, 60, next_table_y_position-30, row_height, 100, delivery_data)
 
-    if (tear_away == True):
-        c.setStrokeColorRGB(*hex_to_rgb(line_hex_color_code)) 
-        # Tear-away section
-        tearaway_data = {
-            'Invoice No': invoice.invoice_number,
-            'Delivery Date': invoice.delivery_date,
-            'Balance': invoice.balance,
-        }
-        next_table_y_position = draw_tearaway_section(c,invoice, 60,x_position, next_table_y_position -60, row_height, table_width, tearaway_data)
-
-    # Footer
     draw_footer(c, width, invoice)
 
     c.showPage()
@@ -112,6 +101,33 @@ def create_invoice_pdf(filename, invoice, tear_away=True,only_tear_away=False):
     pdf = buffer.getvalue()
     buffer.close()
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename=invoice.pdf'
+    response['Content-Disposition'] = 'inline; filename={filename}.pdf'
     response.write(pdf)
     return response
+
+def create_invoice_pdf_customer(filename, invoice):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=landscape(A6))
+    width, height = landscape(A6)
+    table_width = width - 20
+    row_height = 20
+    x_position=width
+    y_position=height-5
+    line_hex_color_code = '#3699ff'
+    c.setStrokeColorRGB(*hex_to_rgb(line_hex_color_code)) 
+    tearaway_data = {
+            'Invoice No': invoice.invoice_number,
+            'Delivery Date': invoice.delivery_date,
+            'Balance': invoice.balance,
+        }
+    draw_tearaway_section(c,invoice, 10,x_position, y_position -60, row_height, table_width, tearaway_data)
+    draw_footer(c, width, invoice)
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename={filename}_{invoice.invoice_number}.pdf'
+    response.write(pdf)
+    return response
+

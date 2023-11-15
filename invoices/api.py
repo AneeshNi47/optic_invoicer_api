@@ -2,15 +2,15 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
-from .models import Invoice
-from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer
+from .models import Invoice, InvoicePayment
+from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer, InvoicePaymentSerializer
 from rest_framework.response import Response
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
 from django.http import HttpResponse
 from io import BytesIO
 from .models import Invoice
-from .create_invoice import create_invoice_pdf
+from .create_invoice import create_invoice_pdf, create_invoice_pdf_customer
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceGetSerializer
@@ -43,6 +43,21 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
 class CreateInvoiceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+            # Retrieve invoice ID from query parameters
+        invoice_id = request.query_params.get('id')
+
+        if not invoice_id:
+            return Response({"error": "Invoice ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Retrieve the invoice instance
+            invoice = Invoice.objects.get(id=invoice_id)
+            invoice.save()
+            return Response(status=status.HTTP_202_ACCEPTED)
+        except Invoice.DoesNotExist:
+            raise Response( {"error": "Invoice does not exist."},status=status.HTTP_400_BAD_REQUEST)
     
     def post(self, request):
         # Prepare data for serialization
@@ -97,13 +112,68 @@ class InvoicePDFView(APIView):
 
     def get(self, request, invoice_id):
         invoice = get_object_or_404(Invoice, id=invoice_id)
-
-        tear_away = request.GET.get('tear_away', True)
-        only_tear_away = request.GET.get('only_tear_away', True)
         # Check if the user's organization matches the invoice's organization
         if invoice.organization != request.get_organization():
             raise PermissionDenied
         setattr(invoice, "organization", request.get_organization())
-        response = create_invoice_pdf("etst", invoice, tear_away,only_tear_away)
+        response = create_invoice_pdf("organization_copy", invoice)
 
         return response
+
+
+
+class InvoiceCustomerPDFView(APIView):
+    serializer_class = InvoiceGetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, invoice_id):
+        invoice = get_object_or_404(Invoice, id=invoice_id)
+        # Check if the user's organization matches the invoice's organization
+        if invoice.organization != request.get_organization():
+            raise PermissionDenied
+        setattr(invoice, "organization", request.get_organization())
+        response = create_invoice_pdf_customer("customer_copy", invoice)
+
+        return response
+class InvoicePaymentViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for viewing and editing invoice payment instances.
+    """
+    serializer_class = InvoicePaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the invoice payments
+        for the currently authenticated user's organization.
+        """
+        user_organization = self.request.get_organization()
+        queryset = InvoicePayment.objects.filter(organization=user_organization, is_active=True)
+
+        invoice_id = self.request.query_params.get('invoice_id')
+        if invoice_id:
+            queryset = queryset.filter(invoice__id=invoice_id)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        # Set the organization and created_by when creating a new InvoicePayment
+        serializer.save(
+            organization=self.request.get_organization(), 
+            created_by=self.request.user
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user_organization = request.get_organization()
+        if instance.organization != user_organization:
+            return Response({"error": "You do not have permission to delete this payment"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if the invoice status is Delivered or Scrapped
+        if instance.invoice.status in ["Delivered", "Scrapped"]:
+            return Response({"error": "Cannot delete payment for delivered or scrapped invoices"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Soft delete logic
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
