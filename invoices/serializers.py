@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Invoice
+from .models import Invoice, InvoicePayment
 from inventory.serializers import InventorySerializer
 
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
@@ -65,12 +65,27 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         invoice.save()
         return invoice
     
+
+
+class InvoicePaymentSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = InvoicePayment
+        fields = '__all__'
+        read_only_fields = ('organization',)
+
+    def create(self, validated_data):
+        return InvoicePayment.objects.create(**validated_data)
+
 class InvoiceGetSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
     prescription = PrescriptionSerializer()
+    invoice_payment = InvoicePaymentSerializer(many=True, read_only=True)
     items = InventorySerializer(many=True, read_only=True) 
 
     class Meta:
         model = Invoice
         fields = '__all__'
         read_only_fields = ('organization',)
+
+

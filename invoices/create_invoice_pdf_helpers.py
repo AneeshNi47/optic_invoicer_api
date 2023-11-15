@@ -108,6 +108,7 @@ def draw_invoice_info(c, height, invoice):
     c.drawString(400, height - 170, "{}".format(invoice.customer.phone))
 
 def draw_tearaway_section(c, invoice, x_position,x_header_position, y_position, row_height, col_width, data_dict):
+    print(col_width)
     c.setLineWidth(1)
     c.setStrokeColorRGB(0, 0, 0)
     c.setDash(1, 2)
@@ -118,7 +119,7 @@ def draw_tearaway_section(c, invoice, x_position,x_header_position, y_position, 
     grid_structure = [
         [('Invoice No', 1, 1), ('Delivery Date', 1, 1), ('Balance', 1, 2)]
     ]
-    y_position = create_custom_grid(c, grid_structure, x_position, next_y_position, row_height + 60, col_width / 4, data_dict)
+    y_position = create_custom_grid(c, grid_structure, x_position, next_y_position, row_height + 60, col_width / 3, data_dict)
     return y_position
 
 def draw_footer(c, width, invoice):
