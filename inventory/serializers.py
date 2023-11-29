@@ -1,8 +1,8 @@
 from rest_framework import serializers
-from .models import Inventory
+from .models import Inventory, InventoryCSV
 
 class InventorySerializer(serializers.ModelSerializer):
-    item_type = serializers.ChoiceField(choices=Inventory.ITEM_TYPE_CHOICES)
+    item_type = serializers.ChoiceField(choices=Inventory.TYPE_CHOICES)
 
 
     class Meta:
@@ -53,3 +53,11 @@ class BulkInventorySerializer(serializers.Serializer):
         # so we'll serialize it using the InventorySerializer
         serializer = InventorySerializer(obj, many=True)
         return {'inventories': serializer.data}
+
+
+
+class InventoryCSVSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InventoryCSV
+        fields = '__all__'
+        read_only_fields = ('organization',)

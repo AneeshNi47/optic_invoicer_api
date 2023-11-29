@@ -1,16 +1,27 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Invoice, InvoicePayment
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Invoice, InvoicePayment, InvoiceItem
 from inventory.serializers import InventorySerializer
+from inventory.models import Inventory
 
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
-from inventory.serializers import InventorySerializer
+
+class InvoiceItemWriteSerializer(serializers.ModelSerializer):
+    inventory_item = serializers.PrimaryKeyRelatedField(queryset=Inventory.objects.all())
+
+    class Meta:
+        model = InvoiceItem
+        fields = ['inventory_item', 'quantity']
 
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
     prescription = PrescriptionSerializer()
+    inventory_items = InvoiceItemWriteSerializer(many=True)
+
 
     class Meta:
         model = Invoice
@@ -21,7 +32,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         customer_data = validated_data.pop('customer')
         prescription_data = validated_data.pop('prescription')
-        items_data = validated_data.pop('items', [])
+        inventory_items = validated_data.pop('inventory_items', [])
 
         # Handle Customer
         customer_id = customer_data.get('id')
@@ -47,22 +58,47 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         prescription_serializer.is_valid(raise_exception=True)
         prescription = prescription_serializer.save(customer=customer, organization=self.context['request'].get_organization())
 
-        # Create Invoice
+        
         invoice = Invoice.objects.create(
             customer=customer,
             prescription=prescription,
             organization=self.context['request'].get_organization(),
+            created_by=self.context['request'].user,
             **validated_data
         )
-        
-        for item in items_data:
-            invoice.items.add(item)  # Assuming items is a ManyToManyField on Invoice
+        total_price = 0
 
-        # Update total, balance, and possibly invoice_number
-        total_price = sum(item.sale_value for item in invoice.items.all())
+        for item_data in inventory_items:
+            inventory_item_id = item_data['inventory_item']
+            inventory_item = Inventory.objects.get(id=inventory_item_id.id)
+            required_quantity = item_data['quantity']
+
+            if inventory_item.qty < required_quantity:
+                raise serializers.ValidationError(
+                    f"Item {inventory_item.name} is out of stock or insufficient quantity."
+                )
+
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                inventory_item=inventory_item,
+                quantity=required_quantity,
+                sale_value=inventory_item.sale_value,  # Capture the current sale value
+                cost_value=inventory_item.cost_value,   # Capture the current cost value,
+            )
+
+            # Update Inventory
+            inventory_item.qty -= required_quantity
+            if inventory_item.qty == 0:
+                inventory_item.status = "Out of Stock"
+            inventory_item.save()
+            total_price += inventory_item.sale_value * required_quantity
+
         invoice.total = total_price - invoice.discount
+        if invoice.is_taxable:
+            invoice.total = invoice.total - ((invoice.tax_percentage / 100) * invoice.total)
         invoice.balance = invoice.total - invoice.advance
         invoice.save()
+
         return invoice
     
 
@@ -75,17 +111,25 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ('organization',)
 
     def create(self, validated_data):
-        return InvoicePayment.objects.create(**validated_data)
+        return InvoicePayment.objects.create(**validated_data,
+            created_by=self.context['request'].user)
+
+
+
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    inventory_item = InventorySerializer(read_only=True)  # Nested serialization for detailed inventory item info
+
+    class Meta:
+        model = InvoiceItem
+        fields = ['invoice','inventory_item','sale_value','cost_value', 'quantity']
 
 class InvoiceGetSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
     prescription = PrescriptionSerializer()
     invoice_payment = InvoicePaymentSerializer(many=True, read_only=True)
-    items = InventorySerializer(many=True, read_only=True) 
-
+    inventory_items = InvoiceItemSerializer(many=True, read_only=True, source='invoiceitem_set')
     class Meta:
         model = Invoice
         fields = '__all__'
         read_only_fields = ('organization',)
-
 

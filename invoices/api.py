@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
-from .models import Invoice, InvoicePayment
+from .models import Invoice, InvoicePayment, InvoiceItem
 from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer, InvoicePaymentSerializer
 from rest_framework.response import Response
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
@@ -11,7 +11,7 @@ from django.http import HttpResponse
 from io import BytesIO
 from .models import Invoice
 from .create_invoice import create_invoice_pdf, create_invoice_pdf_customer
-
+import json
 class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceGetSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -30,7 +30,15 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         organization = self.request.get_organization()
         # Ensure the user has an associated staff profile and organization
         if hasattr(user, "staff") and organization:
-            return Invoice.objects.filter(organization=organization, is_active=True).select_related('customer', 'prescription')
+            queryset = Invoice.objects.filter(organization=organization, is_active=True).select_related('customer', 'prescription').prefetch_related(
+            'items'  # Adjust this if you have a different related_name
+        )
+            taxable_param = self.request.GET.get('taxable', None)
+            if taxable_param is not None:   
+                is_taxable = taxable_param.lower() in ['true', '1', 'yes']
+                queryset = queryset.filter(is_taxable=is_taxable)
+            print("getting")
+            return queryset
         return Invoice.objects.none()  # Return an empty queryset if conditions aren't met
 
 
@@ -40,6 +48,24 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class GetInvoice(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        print(request.get_organization())
+        invoices = Invoice.objects.filter(organization=request.get_organization())
+        new_invoices = []
+        for invoice in invoices:
+            inventory_items = InvoiceItem.objects.filter(invoice=invoice.id)
+            new_invoice = invoice.__dict__
+            for item in inventory_items:
+                item = item.__dict__
+                print(item)
+            new_invoice["items"] = inventory_items
+            new_invoices.append(new_invoice)
+       
+        
+        return Response({"items": []}, status=status.HTTP_200_OK)
 
 class CreateInvoiceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -68,8 +94,9 @@ class CreateInvoiceView(APIView):
         # Check validation status
         if serializer.is_valid():
             # Data is valid, create Invoice
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            invoice = serializer.save()
+            response_serializer = InvoiceGetSerializer(invoice)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         else:
             # Data is invalid, return error
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

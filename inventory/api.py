@@ -1,8 +1,9 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Inventory
-from .serializers import InventorySerializer, BulkInventorySerializer
+from .models import Inventory, InventoryCSV
+from .tasks import download_and_process_file
+from .serializers import InventorySerializer, BulkInventorySerializer, InventoryCSVSerializer
 
 class InventoryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -68,3 +69,24 @@ class InventorySearchView(APIView):
 
         serializer = InventorySerializer(items, many=True)
         return Response(serializer.data)
+    
+
+
+class InventoryCSVViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated] 
+    serializer_class = InventoryCSVSerializer
+
+
+    def get_queryset(self):
+        user = self.request.user
+        return InventoryCSV.objects.filter(organization=self.request.get_organization())
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        serializer.save(organization=self.request.get_organization(), created_by=user)
+
+class ProcessCSVViewSet(APIView):
+    def get(self, request, format=None):
+        organization = self.request.get_organization()
+        download_and_process_file(request.GET.get('file_id'), organization)
+        return Response({"message": "Method executed"})
