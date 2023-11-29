@@ -12,19 +12,20 @@ class Invoice(models.Model):
     date = models.DateField(auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
     prescription = models.ForeignKey(Prescription, on_delete=models.SET_NULL, null=True, blank=True)
-    items=models.ManyToManyField(Inventory, related_name="invoice_items",null=True, blank=True,)
+    items=models.ManyToManyField(Inventory,related_name="inventory_items",null=True, blank=True,)
     remarks = models.TextField(null=True, blank=True)
     delivery_date = models.DateField(null=True, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     discount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True,default=0)
     advance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    PAYMENT_MODE_CHOICES = [
+    PAYMENT_MODE_CHOICES = [    
         ("Cash", "Cash"),
         ("Card", "Card"),
         ("Online", "Online"),
         ("Others", "Others")
     ]
     advance_payment_mode = models.CharField(max_length=10, choices=PAYMENT_MODE_CHOICES, default="Cash")
+    tax_percentage = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True,default=5)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     STATUS_CHOICES = [
         ("Created", "Created"),
@@ -71,14 +72,6 @@ class Invoice(models.Model):
         is_new = self._state.adding
         if not self.invoice_number:
             self.invoice_number = self.generate_invoice_number()
-        
-        # Calculate total and balance
-        total_price = 0 
-        for item in self.items.all():
-            total_price += item.sale_value
-        if is_new:
-            self.total = total_price - self.discount
-            self.balance = self.total - self.advance
         super(Invoice, self).save(*args, **kwargs)
 
         # If the instance is new and advance is not 0, create InvoicePayment
@@ -94,11 +87,33 @@ class Invoice(models.Model):
             )
 
 
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
+    inventory_item = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+    sale_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Sale Value Snapshot", default=0)
+    cost_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Cost Value Snapshot", default=0)
+    quantity = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('invoice', 'inventory_item')
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self.sale_value = self.inventory_item.sale_value
+            self.cost_value = self.inventory_item.cost_value
+
+        super(InvoiceItem, self).save(*args, **kwargs)
+    
+
+    def __str__(self):
+        return f"{self.invoice.invoice_number} {self.inventory_item.name} > {self.quantity}"
+
+
 class InvoicePayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     invoice_number = models.CharField(max_length=255, blank=True)
     amount=models.DecimalField(max_digits=10, decimal_places=2)
-    invoice=models.ForeignKey(Invoice, related_name="invoice_payment", on_delete=models.SET_NULL, null=True)
+    invoice=models.ForeignKey(Invoice, related_name="invoice_payment", on_delete=models.CASCADE, null=True)
     PAYMENT_TYPE_CHOICES = [
         ("Advance", "Advance"),
         ("General", "General"),
@@ -124,6 +139,13 @@ class InvoicePayment(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
 
+    def __str__(self):
+        if self.invoice:
+            return f"{self.invoice_number} {self.payment_type} > {self.amount}"
+        else:
+            return f"{self.invoice_number}"
+
+
     def save(self, *args, **kwargs):
         if not self.invoice:
             raise ValueError("Invoice must be set for the payment")
@@ -141,9 +163,9 @@ class InvoicePayment(models.Model):
 
         # Adjust the invoice balance for new payments
         if self.payment_type != "Advance":
-            total_payments = sum(payment.amount for payment in self.invoice.invoice_payment.all())
-            self.invoice.balance = self.invoice.total - self.invoice.advance- self.invoice.discount - total_payments
-            print(self.invoice.balance)
+            total_payments = sum(payment.amount  for payment in self.invoice.invoice_payment.all() if payment.payment_type != "Advance")
+        
+            self.invoice.balance = self.invoice.total - total_payments
             if self.invoice.balance < 0:
                 raise ValueError("Total payments exceed the invoice amount")
             if self.invoice.balance == 0:

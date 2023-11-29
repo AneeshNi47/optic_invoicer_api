@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 import random
 from datetime import datetime
+from .tasks import download_and_process_file
 
 
 class Inventory(models.Model):
@@ -12,12 +13,6 @@ class Inventory(models.Model):
     qty = models.PositiveIntegerField(default=0, verbose_name="Quantity")
     sale_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Sale Value")
     cost_value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Cost Value")
-    ITEM_TYPE_CHOICES = [
-        ("Lens", "Lens"),
-        ("Frames", "Frames"),
-        ("Other", "Other")
-    ]
-    item_type = models.CharField(max_length=15, choices=ITEM_TYPE_CHOICES, default="Lens")
     brand = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     TYPE_CHOICES = [
@@ -26,6 +21,12 @@ class Inventory(models.Model):
         ("Others", "Others")
     ]
     item_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="Frames")
+    STATUS_CHOICES = [
+        ("Stocked", "Stocked"),
+        ("Out of Stock", "Out of Stock"),
+        ("Others", "Others")
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Stocked")
 
     
     # Default fields
@@ -44,10 +45,48 @@ class Inventory(models.Model):
         return new_sku
 
     def save(self, *args, **kwargs):
+        if self.qty > 0:
+            self.status="Stocked"
         if not self.SKU:
             self.SKU = self.generate_sku()
         super(Inventory, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.SKU} {self.item_type} {self.store_sku}'
-        return f'{self.name} {self.item_type} {self.store_sku}'
+        return f'{self.item_type} -{self.store_sku} :  {self.id} - {self.qty}'
+
+
+class InventoryCSV(models.Model):
+    STATUS_CHOICES = [
+        ("Created", "Created"),
+        ("Processing", "Processing"),
+        ("Completed", "Completed"),
+        ("Error", "Error")
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Created")
+    remarks = models.CharField(max_length=1024,blank=True, null=True)
+    csv_file = models.FileField(upload_to='organization_csv/', blank=True, null=True)
+
+    
+    # Default fields
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="inventories_csv_created", on_delete=models.SET_NULL, null=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="inventories_csv_updated", on_delete=models.SET_NULL, null=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
+    organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE, related_name="inventories_csv")
+
+
+    def __str__(self):
+        return f'{self.csv_file} - {self.status} - {self.organization}'
+    
+    def save(self, *args, **kwargs):
+        # Call the real save method
+        super(InventoryCSV, self).save(*args, **kwargs)
+        is_new = self._state.adding
+
+        if not self.csv_file:
+            print("No CSV File found")
+
+        # Trigger the Celery task after the instance is saved
+        if self.csv_file and is_new:
+            download_and_process_file(self.pk)
+        
