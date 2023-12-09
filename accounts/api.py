@@ -7,6 +7,30 @@ from django.contrib.auth.models import User
 from .serializers import LoginSerializer, UserSerializer
 
 class LoginApi(generics.GenericAPIView):
+    """
+    get:
+    Return a list of all items.
+
+    post:
+    Create a new item.
+
+    # Request Sample
+    ```
+    {
+        "name": "Item Name",
+        "description": "Item Description"
+    }
+    ```
+
+    # Response Sample
+    ```
+    {
+        "id": 1,
+        "name": "Item Name",
+        "description": "Item Description"
+    }
+    ```
+    """
     serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
@@ -29,11 +53,11 @@ class UserApi(generics.RetrieveAPIView):
     serializer_class = UserSerializer
 
     def get(self, request, *args, **kwargs):
-        # Check if the user is associated with a Staff or Customer object
-        if not (hasattr(request.user, 'staff') or hasattr(request.user, 'customer')):
-            # Log out the user
-            auth_logout(request)
-            return Response({"detail": "User not associated with Staff or Customer."}, status=status.HTTP_403_FORBIDDEN)
+        # # Check if the user is associated with a Staff or Customer object
+        # if not (hasattr(request.user, 'staff') or hasattr(request.user, 'customer')):
+        #     # Log out the user
+        #     auth_logout(request)
+        #     return Response({"detail": "User not associated with Staff or Customer."}, status=status.HTTP_403_FORBIDDEN)
         
         # If associated, return the user details
         serializer = self.get_serializer(self.get_object())

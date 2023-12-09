@@ -6,6 +6,49 @@ from .tasks import download_and_process_file
 from .serializers import InventorySerializer, BulkInventorySerializer, InventoryCSVSerializer
 
 class InventoryViewSet(viewsets.ModelViewSet):
+    """
+    post:
+    Create a new Inventory with Super Staff.
+
+    # Request Sample
+    ```
+    
+    {
+        "store_sku": "store_sku_0L002",
+        "name": "Oakley lens 1",
+        "description": "this is a test lens from Oakley",
+        "qty": 15,
+        "sale_value": 120.45,
+        "cost_value": 80.25,
+        "brand": "Oakley",
+        "item_type": "Lens"
+    }
+    ```
+
+    # Response Sample
+    ```
+    {
+        "id": 76,
+        "item_type": "Frames",
+        "SKU": "ORGA0002020231208062102519160529",
+        "store_sku": "store_sku_0F01245",
+        "name": "Oakley Frame 23",
+        "description": "this is a test Frame from Oakley",
+        "qty": 100,
+        "sale_value": "354.45",
+        "cost_value": "154.25",
+        "brand": "Oakley",
+        "is_active": true,
+        "status": "Stocked",
+        "created_on": "2023-12-08T06:21:02.520401Z",
+        "updated_on": "2023-12-08T06:21:02.520435Z",
+        "created_by": 2,
+        "updated_by": null,
+        "organization": 1
+    }
+    ```
+    """
+
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = InventorySerializer
 

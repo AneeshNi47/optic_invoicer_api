@@ -39,6 +39,60 @@ class GetOrganizationView(APIView):
              return Response({'detail': 'Organization not found for the user.'}, status=status.HTTP_404_NOT_FOUND)
 
 class CreateOrganizationAndStaffView(APIView):
+    """
+    post:
+    Create a new Organization with Super Staff.
+
+    # Request Sample
+    ```
+    {
+        "organization": {
+            "name": "Bright Vision Optics",
+            "address_first_line": "789 Maple Avenue",
+            "email": "sarah.jones@email.com",
+            "secondary_email": "info@brightvisionoptics.com",
+            "primary_phone_mobile": "555-321-9876",
+            "other_contact_numbers": "555-765-4321,555-678-5432",
+            "phone_landline": "555-654-3210",
+            "logo": null,
+            "translation_required": false,
+            "country": "United States",
+            "city": "Seattle",
+            "post_box_number": "98101",
+            "services": "Vision Correction, Eyewear Consultation, Lens Fitting",
+            "is_active": true
+        },
+        "staff": {
+            "first_name": "Sarah",
+            "last_name": "Jones",
+            "designation": "Managing Director",
+            "phone": "555-654-0987",
+            "email": "sarah.jones@email.com",
+            "staff_superuser": true,
+            "user": {
+                "username": "sarah.jones",
+                "password": "seattle2023"
+            }
+        }
+    }
+    ```
+
+    # Response Sample
+    ```
+    {
+        "name": "Bright Vision Optics",
+        "is_active": true,
+        "email": "sarah.jones@email.com",
+        "primary_phone_mobile": "555-321-9876",
+        "staff_count": 1,
+        "superstaff_first_name": "Sarah",
+        "subscription_status": {
+            "status": "Demo",
+            "latest_payment": null
+            }
+    }
+    ```
+    """
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
     def post(self, request):
@@ -50,6 +104,36 @@ class CreateOrganizationAndStaffView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OrganizationListView(APIView):
+    """
+    get:
+    Get List of all Organization by Super Admin
+    # Response Sample
+    ```
+    [
+    {
+        "name": "Optic Invoicer",
+        "is_active": true,
+        "email": "info@opticinvoicer.com",
+        "primary_phone_mobile": "123-456-7890",
+        "staff_count": 1,
+        "superstaff_first_name": null,
+        "subscription_status": null
+    },
+    {
+        "name": "Optic Invoicer 2",
+        "is_active": true,
+        "email": "info@opticinvoicer2.com",
+        "primary_phone_mobile": "123-999-7890",
+        "staff_count": 1,
+        "superstaff_first_name": null,
+        "subscription_status": {
+            "status": "Trial",
+            "latest_payment": null
+        }
+    },..
+    ]
+    ```
+    """
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):

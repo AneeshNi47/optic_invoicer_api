@@ -19,7 +19,8 @@ ALLOWED_HOSTS = [
     '*',
     'https://leadmanager-8fttm24wx-aneeshni47.vercel.app',
     'https://optic-invoicer-ui.vercel.app/'
-    'https://optic-invoicer-ui-v2-aneeshni47.vercel.app/'
+    'https://optic-invoicer-ui-v2-aneeshni47.vercel.app/',
+    'https://optic-invoicer-ui-v2.vercel.app',
     'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com/'
     ]
 
@@ -34,6 +35,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://leadmanager-8fttm24wx-aneeshni47.vercel.app',
     'https://optic-invoicer-ui.vercel.app',
     'https://optic-invoicer-ui-v2-aneeshni47.vercel.app',
+    'https://optic-invoicer-ui-v2.vercel.app',
     'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
 ]
 
@@ -128,7 +130,7 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default="ap-south-1")
 
-CELERY_BROKER_URL = env('STACKHERO_RABBITMQ_AMQP_URL_TLS')
+#CELERY_BROKER_URL = env('STACKHERO_RABBITMQ_AMQP_URL_TLS', None)
 # Tell Django to use S3 for file storage
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
