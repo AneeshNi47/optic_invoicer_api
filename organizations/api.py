@@ -137,6 +137,9 @@ class OrganizationListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        if not self.request.user.is_superuser:
+            raise serializer.ValidationError("Only superusers can view an organization.")
+
         organizations = Organization.objects.all()
         serializer = ListOrganizationStaffSerializer(organizations, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
