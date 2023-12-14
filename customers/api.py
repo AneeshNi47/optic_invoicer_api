@@ -2,6 +2,7 @@ from .models import Customer, Prescription
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
+from optic_invoicer_api.custom_cursor_pagination import CustomCursorPagination
 from .serializers import CustomerSerializer, PrescriptionSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -60,4 +61,17 @@ class CustomerSearchView(APIView):
             customers = queryset.filter(email__icontains=email)
 
         serializer = CustomerSerializer(customers, many=True)
+
+
+        
+        # Apply custom cursor pagination
+        paginator = CustomCursorPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        
+        if page is not None:
+            serializer = CustomerSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data)
+    

@@ -37,7 +37,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             if taxable_param is not None:   
                 is_taxable = taxable_param.lower() in ['true', '1', 'yes']
                 queryset = queryset.filter(is_taxable=is_taxable)
-            print("getting")
             return queryset
         return Invoice.objects.none()  # Return an empty queryset if conditions aren't met
 

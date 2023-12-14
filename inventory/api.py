@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from optic_invoicer_api.custom_cursor_pagination import CustomCursorPagination
 from .models import Inventory, InventoryCSV
 from .tasks import download_and_process_file
 from .serializers import InventorySerializer, BulkInventorySerializer, InventoryCSVSerializer
@@ -109,6 +110,15 @@ class InventorySearchView(APIView):
             items = queryset.filter(name__icontains=name)
         elif type:
             items = queryset.filter(item_type__icontains=type)
+
+        
+        # Apply custom cursor pagination
+        paginator = CustomCursorPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        
+        if page is not None:
+            serializer = InventorySerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = InventorySerializer(items, many=True)
         return Response(serializer.data)
