@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from .models import Inventory, InventoryCSV
 
+import logging
+
+logger = logging.getLogger(__name__)
 class InventorySerializer(serializers.ModelSerializer):
     item_type = serializers.ChoiceField(choices=Inventory.TYPE_CHOICES)
 
@@ -19,12 +22,16 @@ class InventorySerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = self.context['request'].user
-        request = self.context['request']
-        organization = request.get_organization() 
-        validated_data['created_by'] = user
-        validated_data['organization'] = organization
-        return super().create(validated_data)
+        try:
+            user = self.context['request'].user
+            request = self.context['request']
+            organization = request.get_organization() 
+            validated_data['created_by'] = user
+            validated_data['organization'] = organization
+            logger.info('New Inventory Object created by {}',self.context['request'].user)
+            return super().create(validated_data)
+        except Exception as e:
+            logger.error('Inventory Creation Error occurred: %s', e)
 
     def update(self, instance, validated_data):
         user = self.context['request'].user

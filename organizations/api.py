@@ -1,6 +1,9 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from .models import Organization
+from inventory.models import Inventory
+from invoices.models import Invoice
+from customers.models import Customer, Prescription
 from rest_framework.views import APIView
 from .serializers import OrganizationSerializer, OrganizationStaffSerializer,ListOrganizationStaffSerializer
 
@@ -144,3 +147,32 @@ class OrganizationListView(APIView):
         serializer = ListOrganizationStaffSerializer(organizations, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+class RefreshOrganizationData(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Ensure the user belongs to an organization
+
+        organization = Organization.objects.filter(id=request.get_organization().id).first()
+
+        if not organization:
+            return Response({'detail': 'User is not associated with any organization.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        organization = request.get_organization()
+
+        # Calculate total inventory count
+        total_inventory = Inventory.objects.filter(organization=organization.id).count()
+        total_invoices = Invoice.objects.filter(organization=organization.id).count()
+        total_customers = Customer.objects.filter(organization=organization.id).count()
+        total_prescriptions = Prescription.objects.filter(organization=organization.id).count()
+
+        # Update total_inventory in the organization
+        organization.total_inventory = total_inventory
+        organization.total_invoices = total_invoices
+        organization.total_customers = total_customers
+        organization.total_prescriptions = total_prescriptions
+        organization.save()
+
+        # Serialize and return the updated organization
+        serializer = OrganizationSerializer(organization)
+        return Response(serializer.data)

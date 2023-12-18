@@ -54,3 +54,6 @@ drf_example
 *.pyc
 
 optic_invoicer_api/.env
+
+logs/
+logfile.log
