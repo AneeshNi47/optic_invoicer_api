@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 import random
 from datetime import datetime
+from organizations.models import Organization
 from .tasks import download_and_process_file
 
 
@@ -45,11 +46,14 @@ class Inventory(models.Model):
         return new_sku
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding 
         if self.qty > 0:
             self.status="Stocked"
         if not self.SKU:
             self.SKU = self.generate_sku()
         super(Inventory, self).save(*args, **kwargs)
+        if is_new:
+            Organization.objects.filter(id=self.organization_id).update(total_inventory=models.F('total_inventory') + 1)
 
     def __str__(self):
         return f'{self.item_type} -{self.store_sku} :  {self.id} - {self.qty}'

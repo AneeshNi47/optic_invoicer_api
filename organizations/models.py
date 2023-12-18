@@ -16,6 +16,10 @@ class Organization(models.Model):
     post_box_number = models.CharField(max_length=50, blank=True, null=True)
     services = models.TextField(blank=True, null=True)  # Comma-separated or newline-separated services
     is_active = models.BooleanField(default=True)
+    total_customers = models.PositiveIntegerField(default=0, verbose_name="total_customers")
+    total_prescriptions = models.PositiveIntegerField(default=0, verbose_name="total_prescriptions")
+    total_inventory = models.PositiveIntegerField(default=0, verbose_name="total_inventory")
+    total_invoices = models.PositiveIntegerField(default=0, verbose_name="total_invoices")
 
     # Default fields
     created_by = models.ForeignKey(User, related_name="organizations_created", on_delete=models.SET_NULL, null=True)

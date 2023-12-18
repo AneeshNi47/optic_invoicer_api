@@ -8,6 +8,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -68,20 +72,22 @@ class OrganizationStaffSerializer(serializers.Serializer):
                 subscription_type='Demo',
                 status='Trial'
             )
-        
-            # Send a welcome email with the generated password
-            mail_subject = 'Welcome to Our Platform'
-            html_message = render_to_string('email/welcome_email.html', {
-                'staff': staff_data,
-                'organization': organization,
-                'password': password,
-                'username': username,
-                'frontend_url': settings.FRONTEND_URL
-            })
-            plain_message = strip_tags(html_message)
 
-            send_mail(mail_subject, plain_message, settings.EMAIL_HOST_USER, [staff_data['email']],html_message=html_message)
+            try: 
+                # Send a welcome email with the generated password
+                mail_subject = 'Welcome to Our Platform'
+                html_message = render_to_string('email/welcome_email.html', {
+                    'staff': staff_data,
+                    'organization': organization,
+                    'password': password,
+                    'username': username,
+                    'frontend_url': settings.FRONTEND_URL
+                })
+                plain_message = strip_tags(html_message)
 
+                send_mail(mail_subject, plain_message, settings.EMAIL_HOST_USER, [staff_data['email']],html_message=html_message)
+            except Exception as e:
+                logger.error('Error Sending Welcome main!: %s', e)
         saved_organization =  {
                 "name": organization.name,
                 "is_active": organization.is_active,
@@ -95,6 +101,8 @@ class OrganizationStaffSerializer(serializers.Serializer):
                 
                 }
             }
+        
+        logger.info('New Organization and SuperStaff created by %s',self.context['request'].user)
         return saved_organization
     
 
