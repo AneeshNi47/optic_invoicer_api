@@ -55,5 +55,5 @@ drf_example
 
 optic_invoicer_api/.env
 
-logs/
+
 logfile.log
