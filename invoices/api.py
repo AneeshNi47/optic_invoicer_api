@@ -185,8 +185,7 @@ class InvoicePaymentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Set the organization and created_by when creating a new InvoicePayment
         serializer.save(
-            organization=self.request.get_organization(), 
-            created_by=self.request.user
+            organization=self.request.get_organization()
         )
 
     def destroy(self, request, *args, **kwargs):
