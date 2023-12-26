@@ -70,13 +70,17 @@ class CreateInvoiceView(APIView):
     def get(self, request, *args, **kwargs):
             # Retrieve invoice ID from query parameters
         invoice_id = request.query_params.get('id')
+        invoice_number = request.query_params.get('invoice_number')
 
-        if not invoice_id:
-            return Response({"error": "Invoice ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not invoice_id and not invoice_number:
+            return Response({"error": "Invoice ID or Number is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Retrieve the invoice instance
-            invoice = Invoice.objects.get(id=invoice_id)
+            if invoice_number:
+                invoice = Invoice.objects.get(invoice_number=invoice_number)
+            else:
+                invoice = Invoice.objects.get(id=invoice_id)
             invoice.save()
             return Response(status=status.HTTP_202_ACCEPTED)
         except Invoice.DoesNotExist:

@@ -97,6 +97,8 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         if invoice.is_taxable:
             invoice.total = invoice.total - ((invoice.tax_percentage / 100) * invoice.total)
         invoice.balance = invoice.total - invoice.advance
+        if invoice.balance < 0:
+            raise ValueError("Invoice Balance calculation Error")
         invoice.save()
 
         return invoice
