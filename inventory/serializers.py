@@ -10,7 +10,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inventory
-        fields = '__all__'
+        exclude = ('organization')
         read_only_fields = ('organization',)
 
     def validate(self, data):

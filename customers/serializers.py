@@ -5,7 +5,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     class Meta:
         model= Customer
-        fields = '__all__'
+        exclude = ('organization',)
         read_only_fields = ('organization',)
 
     def validate(self, data):
@@ -47,5 +47,5 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
     class Meta:
         model= Prescription
-        fields = '__all__'
+        exclude = ('organization',)
         read_only_fields = ('organization',)

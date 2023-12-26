@@ -30,9 +30,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         organization = self.request.get_organization()
         # Ensure the user has an associated staff profile and organization
         if hasattr(user, "staff") and organization:
-            queryset = Invoice.objects.filter(organization=organization, is_active=True).select_related('customer', 'prescription').prefetch_related(
-            'items'  # Adjust this if you have a different related_name
-        )
+            queryset = Invoice.objects.filter(organization=organization, is_active=True)
             taxable_param = self.request.GET.get('taxable', None)
             if taxable_param is not None:   
                 is_taxable = taxable_param.lower() in ['true', '1', 'yes']
@@ -72,13 +70,17 @@ class CreateInvoiceView(APIView):
     def get(self, request, *args, **kwargs):
             # Retrieve invoice ID from query parameters
         invoice_id = request.query_params.get('id')
+        invoice_number = request.query_params.get('invoice_number')
 
-        if not invoice_id:
-            return Response({"error": "Invoice ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not invoice_id and not invoice_number:
+            return Response({"error": "Invoice ID or Number is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Retrieve the invoice instance
-            invoice = Invoice.objects.get(id=invoice_id)
+            if invoice_number:
+                invoice = Invoice.objects.get(invoice_number=invoice_number)
+            else:
+                invoice = Invoice.objects.get(id=invoice_id)
             invoice.save()
             return Response(status=status.HTTP_202_ACCEPTED)
         except Invoice.DoesNotExist:
@@ -185,8 +187,10 @@ class InvoicePaymentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Set the organization and created_by when creating a new InvoicePayment
         serializer.save(
-            organization=self.request.get_organization()
-        )
+                    organization=self.request.get_organization()
+                )
+
+
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

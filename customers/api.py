@@ -75,3 +75,14 @@ class CustomerSearchView(APIView):
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data)
     
+class PrescriptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PrescriptionSerializer
+
+    def get_queryset(self):
+        # Use the organization set in the middleware to filter customers
+        if self.request.get_organization():
+            return Prescription.objects.filter(organization=self.request.get_organization())
+        else:
+            # Handle cases where there's no associated organization
+            return Prescription.objects.none()
