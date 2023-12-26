@@ -104,7 +104,9 @@ INSTALLED_APPS = [
 REST_FRAMEWORK ={
     'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
     'DEFAULT_PAGINATION_CLASS': 'optic_invoicer_api.custom_cursor_pagination.CustomCursorPagination',
-    'PAGE_SIZE': 10  # Default page size
+    'PAGE_SIZE': 10,  # Default page size
+    'EXCEPTION_HANDLER': 'optic_invoicer_api.custom_exception_handler.custom_exception_handler'
+
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -30,9 +30,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         organization = self.request.get_organization()
         # Ensure the user has an associated staff profile and organization
         if hasattr(user, "staff") and organization:
-            queryset = Invoice.objects.filter(organization=organization, is_active=True).select_related('customer', 'prescription').prefetch_related(
-            'items'  # Adjust this if you have a different related_name
-        )
+            queryset = Invoice.objects.filter(organization=organization, is_active=True)
             taxable_param = self.request.GET.get('taxable', None)
             if taxable_param is not None:   
                 is_taxable = taxable_param.lower() in ['true', '1', 'yes']
@@ -185,8 +183,10 @@ class InvoicePaymentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Set the organization and created_by when creating a new InvoicePayment
         serializer.save(
-            organization=self.request.get_organization()
-        )
+                    organization=self.request.get_organization()
+                )
+
+
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

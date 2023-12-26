@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from uuid import uuid4
 from organizations.models import Organization
 from django.contrib.auth.models import User
@@ -147,30 +147,51 @@ class InvoicePayment(models.Model):
 
 
     def save(self, *args, **kwargs):
+        with transaction.atomic():
+            # Perform validations
+            self.validate_invoice()
+            self.validate_payment_editing()
+            self.validate_invoice_status()
+
+            # If validations pass, proceed to save
+            super(InvoicePayment, self).save(*args, **kwargs)
+
+            # Adjust the invoice balance after saving
+            self.adjust_invoice_balance()
+
+    def validate_invoice(self):
+        """ Ensure that an invoice is set for the payment. """
         if not self.invoice:
             raise ValueError("Invoice must be set for the payment")
 
-        if not self._state.adding: 
-            if self.is_active is False and InvoicePayment.objects.filter(pk=self.pk, is_active=True).exists():
-                super(InvoicePayment, self).save(update_fields=['is_active'])
-            else:
-                raise ValueError("Editing existing payments is not allowed")
-
-        if self.invoice.status in ["Scrapped", "Paid"]:
-            raise ValueError("Cannot Add Payment for Completed/Scrapped Invoice")
+    def validate_payment_editing(self):
+        """ Prevent editing of existing active payments. """
+        if self._state.adding or not InvoicePayment.objects.filter(pk=self.pk, is_active=True).exists():
+            return
+        if not self.is_active:
+            super(InvoicePayment, self).save(update_fields=['is_active'])
         else:
-            super(InvoicePayment, self).save(*args, **kwargs) 
+            raise ValueError("Editing existing payments is not allowed")
 
-        # Adjust the invoice balance for new payments
-        if self.payment_type != "Advance":
-            total_payments = sum(payment.amount  for payment in self.invoice.invoice_payment.all() if payment.payment_type != "Advance")
-        
-            self.invoice.balance = self.invoice.total - total_payments
-            if self.invoice.balance < 0:
-                raise ValueError("Total payments exceed the invoice amount")
-            if self.invoice.balance == 0:
-                self.invoice.status = "Paid"
-            self.invoice.save()
+    def validate_invoice_status(self):
+        """ Check if the invoice is in a state that allows adding payments. """
+        if self.invoice.status in ["Scrapped", "Paid"]:
+            raise ValueError("Cannot add payment for Completed/Scrapped Invoice")
+
+    def adjust_invoice_balance(self):
+        """ Adjust the invoice balance for new payments. """
+        if self.payment_type == "Advance":
+            return
+
+        total_payments = sum(payment.amount for payment in self.invoice.invoice_payment.all() if payment.payment_type != "Advance")
+        self.invoice.balance = self.invoice.total - total_payments
+
+        if self.invoice.balance < 0:
+            raise ValueError("Total payments exceed the invoice amount")
+        if self.invoice.balance == 0:
+            self.invoice.status = "Paid"
+        self.invoice.save()
+
 
     def delete(self, *args, **kwargs):
         if self.invoice.status in ["Delivered", "Scrapped"]:

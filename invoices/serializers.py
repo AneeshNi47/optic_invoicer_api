@@ -117,16 +117,50 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 
 
 class InvoiceItemSerializer(serializers.ModelSerializer):
+    class InventorySerializer(serializers.ModelSerializer):
+        item_type = serializers.ChoiceField(choices=Inventory.TYPE_CHOICES)
+
+
+        class Meta:
+            model = Inventory
+            fields = (
+                        "item_type",
+                        "store_sku",
+                        "name",
+                        "brand",
+                        "is_active"
+            )
+            read_only_fields = ('organization',)
     inventory_item = InventorySerializer(read_only=True)  # Nested serialization for detailed inventory item info
 
     class Meta:
         model = InvoiceItem
-        fields = ['invoice','inventory_item','sale_value','cost_value', 'quantity']
+        fields = ['inventory_item','sale_value','cost_value', 'quantity']
 
 class InvoiceGetSerializer(serializers.ModelSerializer):
-    customer = CustomerSerializer()
-    prescription = PrescriptionSerializer()
-    invoice_payment = InvoicePaymentSerializer(many=True, read_only=True)
+    class CustomerPartSerializer(serializers.ModelSerializer):
+        class Meta:
+            model= Customer
+            fields = (
+                    "phone",
+                    "email",
+                    "first_name",
+                    "last_name",
+                    "gender")
+            read_only_fields = ('organization',)
+    class InvoicePaymentPartSerializer(serializers.ModelSerializer):
+         class Meta:
+            model = InvoicePayment
+            fields = (
+                    "amount",
+                    "payment_type",
+                    "payment_mode",
+                    "remarks",
+                    "is_active")
+            read_only_fields = ('organization',)
+
+    customer = CustomerPartSerializer()
+    invoice_payment = InvoicePaymentPartSerializer(many=True, read_only=True)
     inventory_items = InvoiceItemSerializer(many=True, read_only=True, source='invoiceitem_set')
     class Meta:
         model = Invoice
