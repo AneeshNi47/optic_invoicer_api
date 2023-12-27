@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 from .models import Invoice, InvoicePayment, InvoiceItem
-from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer, InvoicePaymentSerializer
+from .serializers import InvoiceCreateSerializer, InvoiceGetSerializer, InvoicePaymentSerializer,InvoiceGetItemSerializer
 from rest_framework.response import Response
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
@@ -13,7 +13,13 @@ from .models import Invoice
 from .create_invoice import create_invoice_pdf, create_invoice_pdf_customer
 import json
 class InvoiceViewSet(viewsets.ModelViewSet):
-    serializer_class = InvoiceGetSerializer
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return InvoiceGetSerializer
+        elif self.action == 'retrieve':
+            return InvoiceGetItemSerializer
+        return super().get_serializer_class() 
+    
     permission_classes = [permissions.IsAuthenticated]
 
     class Meta:
@@ -49,7 +55,6 @@ class GetInvoice(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        print(request.get_organization())
         invoices = Invoice.objects.filter(organization=request.get_organization())
         new_invoices = []
         for invoice in invoices:
