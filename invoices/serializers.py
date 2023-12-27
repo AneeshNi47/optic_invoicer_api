@@ -164,8 +164,23 @@ class InvoiceGetSerializer(serializers.ModelSerializer):
     customer = CustomerPartSerializer()
     invoice_payment = InvoicePaymentPartSerializer(many=True, read_only=True)
     inventory_items = InvoiceItemSerializer(many=True, read_only=True, source='invoiceitem_set')
+
+
     class Meta:
         model = Invoice
         fields = '__all__'
         read_only_fields = ('organization',)
 
+
+
+class InvoiceGetItemSerializer(serializers.ModelSerializer):
+    customer = CustomerSerializer()
+    prescription = PrescriptionSerializer()
+    invoice_payment = InvoicePaymentSerializer(many=True, read_only=True)
+    inventory_items = InvoiceItemSerializer(many=True, read_only=True, source='invoiceitem_set')
+
+
+    class Meta:
+        model = Invoice
+        fields = '__all__'
+        read_only_fields = ('organization',)
