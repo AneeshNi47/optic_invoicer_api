@@ -60,13 +60,10 @@ class CustomerSearchView(APIView):
         elif email:
             customers = queryset.filter(email__icontains=email)
 
-        serializer = CustomerSerializer(customers, many=True)
-
-
         
         # Apply custom cursor pagination
         paginator = CustomCursorPagination()
-        page = paginator.paginate_queryset(queryset, request)
+        page = paginator.paginate_queryset(customers, request)
         
         if page is not None:
             serializer = CustomerSerializer(page, many=True)
