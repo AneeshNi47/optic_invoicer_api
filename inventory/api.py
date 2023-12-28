@@ -114,7 +114,7 @@ class InventorySearchView(APIView):
         
         # Apply custom cursor pagination
         paginator = CustomCursorPagination()
-        page = paginator.paginate_queryset(queryset, request)
+        page = paginator.paginate_queryset(items, request)
         
         if page is not None:
             serializer = InventorySerializer(page, many=True)
