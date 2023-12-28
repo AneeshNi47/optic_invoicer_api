@@ -105,22 +105,22 @@ class InventorySearchView(APIView):
             return Response({"error": "Provide name, sku or type for searching."}, status=status.HTTP_400_BAD_REQUEST)
         queryset = Inventory.objects.filter(organization=organization)
         if sku:
-            items = queryset.filter(store_sku__icontains=sku)
+            queryset = queryset.filter(store_sku__icontains=sku)
         elif name:
-            items = queryset.filter(name__icontains=name)
+            queryset = queryset.filter(name__icontains=name)
         elif type:
-            items = queryset.filter(item_type__icontains=type)
+            queryset = queryset.filter(item_type__icontains=type)
 
         
         # Apply custom cursor pagination
         paginator = CustomCursorPagination()
-        page = paginator.paginate_queryset(items, request)
+        page = paginator.paginate_queryset(queryset, request)
         
         if page is not None:
             serializer = InventorySerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = InventorySerializer(items, many=True)
+        serializer = InventorySerializer(queryset, many=True)
         return Response(serializer.data)
     
 

@@ -56,20 +56,20 @@ class CustomerSearchView(APIView):
             return Response({"error": "Provide email or phone for searching."}, status=status.HTTP_400_BAD_REQUEST)
         queryset = Customer.objects.filter(organization=organization)
         if phone:
-            customers = queryset.filter(phone__icontains=phone)
+            queryset = queryset.filter(phone__icontains=phone)
         elif email:
-            customers = queryset.filter(email__icontains=email)
+            queryset = queryset.filter(email__icontains=email)
 
         
         # Apply custom cursor pagination
         paginator = CustomCursorPagination()
-        page = paginator.paginate_queryset(customers, request)
+        page = paginator.paginate_queryset(queryset, request)
         
         if page is not None:
             serializer = CustomerSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = CustomerSerializer(customers, many=True)
+        serializer = CustomerSerializer(queryset, many=True)
         return Response(serializer.data)
     
 class PrescriptionViewSet(viewsets.ModelViewSet):
