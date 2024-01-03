@@ -3,13 +3,18 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from optic_invoicer_api.custom_cursor_pagination import CustomCursorPagination
-from .serializers import CustomerSerializer, PrescriptionSerializer
+from .serializers import CustomerSerializer, PrescriptionSerializer,CustomerGetSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = CustomerSerializer
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CustomerSerializer
+        elif self.action == 'retrieve':
+            return CustomerGetSerializer
+        return super().get_serializer_class() 
 
     def get_queryset(self):
         # Use the organization set in the middleware to filter customers
@@ -66,10 +71,10 @@ class CustomerSearchView(APIView):
         page = paginator.paginate_queryset(queryset, request)
         
         if page is not None:
-            serializer = CustomerSerializer(page, many=True)
+            serializer = CustomerGetSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = CustomerSerializer(queryset, many=True)
+        serializer = CustomerGetSerializer(queryset, many=True)
         return Response(serializer.data)
     
 class PrescriptionViewSet(viewsets.ModelViewSet):
