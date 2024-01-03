@@ -1,6 +1,22 @@
 from .models import Customer, Prescription
 from rest_framework import serializers
 
+class PrescriptionGetSerializer(serializers.ModelSerializer):
+    customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
+    class Meta:
+        model= Prescription
+        exclude = ('organization',)
+        read_only_fields = ('organization',)
+
+class CustomerGetSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    prescriptions = PrescriptionGetSerializer(many=True, read_only=True)  # Add this line
+
+    class Meta:
+        model = Customer
+        exclude = ('organization',)
+        read_only_fields = ('organization',)
+
 class CustomerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     class Meta:
