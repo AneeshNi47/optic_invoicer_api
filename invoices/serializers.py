@@ -19,7 +19,7 @@ class InvoiceItemWriteSerializer(serializers.ModelSerializer):
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
-    prescription = PrescriptionSerializer()
+    prescription = PrescriptionSerializer(required=False)
     inventory_items = InvoiceItemWriteSerializer(many=True)
 
 
@@ -31,7 +31,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         customer_data = validated_data.pop('customer')
-        prescription_data = validated_data.pop('prescription')
+        prescription_data = validated_data.pop('prescription', None)
         inventory_items = validated_data.pop('inventory_items', [])
 
         # Handle Customer
@@ -47,16 +47,18 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         customer = customer_serializer.save(organization=self.context['request'].get_organization())
 
         # Handle Prescription
-        prescription_id = prescription_data.get('id')
-        if prescription_id:
-            # Update existing prescription
-            prescription_instance = Prescription.objects.get(id=prescription_id)
-            prescription_serializer = PrescriptionSerializer(prescription_instance, data=prescription_data)
-        else:
-            # Create new Prescription
-            prescription_serializer = PrescriptionSerializer(data=prescription_data)
-        prescription_serializer.is_valid(raise_exception=True)
-        prescription = prescription_serializer.save(customer=customer, organization=self.context['request'].get_organization())
+        prescription = None
+        if prescription_data:
+            prescription_id = prescription_data.get('id')
+            if prescription_id:
+                # Update existing prescription
+                prescription_instance = Prescription.objects.get(id=prescription_id)
+                prescription_serializer = PrescriptionSerializer(prescription_instance, data=prescription_data)
+            else:
+                # Create new Prescription
+                prescription_serializer = PrescriptionSerializer(data=prescription_data)
+            prescription_serializer.is_valid(raise_exception=True)
+            prescription = prescription_serializer.save(customer=customer, organization=self.context['request'].get_organization())
 
         
         invoice = Invoice.objects.create(
