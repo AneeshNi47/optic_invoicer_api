@@ -110,7 +110,7 @@ def create_invoice_pdf_customer(filename, invoice):
     c = canvas.Canvas(buffer, pagesize=landscape(A6))
     width, height = landscape(A6)
     table_width = width - 20
-    row_height = 20
+    row_height = 40
     x_position=width
     y_position=height-5
     line_hex_color_code = '#3699ff'
@@ -118,6 +118,8 @@ def create_invoice_pdf_customer(filename, invoice):
     tearaway_data = {
             'Invoice No': invoice.invoice_number,
             'Delivery Date': invoice.delivery_date,
+            'Total': invoice.total,
+            'Advance': invoice.advance,
             'Balance': invoice.balance,
         }
     draw_tearaway_section(c,invoice, 10,x_position, y_position -60, row_height, table_width, tearaway_data)

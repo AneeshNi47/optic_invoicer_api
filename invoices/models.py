@@ -184,7 +184,7 @@ class InvoicePayment(models.Model):
             return
 
         total_payments = sum(payment.amount for payment in self.invoice.invoice_payment.all() if payment.payment_type != "Advance")
-        self.invoice.balance = self.invoice.total - total_payments
+        self.invoice.balance = self.invoice.total - (total_payments +self.invoice.advance)
 
         if self.invoice.balance < 0:
             raise ValueError("Total payments exceed the invoice amount")

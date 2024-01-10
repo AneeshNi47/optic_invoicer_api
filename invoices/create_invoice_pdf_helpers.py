@@ -7,15 +7,17 @@ def draw_header(c, x_position, y_position, invoice):
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(x_position / 2, y_position, invoice.organization.name)
     c.setFont("Helvetica", 12)
-    c.drawCentredString(x_position / 2, y_position - 20, "{}, {}, {}, {}, {}".format(
+    c.drawCentredString(x_position / 2, y_position - 20, "{}, {}, {}".format(
         invoice.organization.address_first_line,
         invoice.organization.country,
-        invoice.organization.city,
+        invoice.organization.city
+    ))
+    c.drawCentredString(x_position / 2, y_position - 40, "{}, {}".format(
         invoice.organization.phone_landline,
         invoice.organization.post_box_number,
     ))
-    c.drawCentredString(x_position / 2, y_position - 40, "Services: {}".format(invoice.organization.services))
-    return y_position-60
+    c.drawCentredString(x_position / 2, y_position - 60, "Services: {}".format(invoice.organization.services))
+    return y_position-80
 
 # PDF generator Helper functions
 def draw_table_generator(c, num_columns, headers, x_position, y_position, row_height, table_width, data, title=None):
@@ -75,19 +77,26 @@ def create_custom_grid(c,grid_structure, x_position, y_position, row_height, col
             key, row_span, col_span = cell
             value = data_dict.get(key, '')
             cell_width = col_width * col_span
-            cell_height = row_height * row_span  # Update cell height based on row_span
-            text_y_position = row_y_position - cell_height / 2  # Update text y-coordinate
+            text_y_position = row_y_position - row_height/2  # Update text y-coordinate
+            if key == "Balance":
+                # Draw the key and value
+                balance_y_position= text_y_position + row_height-45
+                c.setFont("Helvetica-Bold", 20)
+                c.drawString(current_x_position + 5, balance_y_position, f"{key}:")
+                c.setFont("Helvetica", 20)
+                c.drawString(current_x_position + 90, balance_y_position , str(value))
             
-            # Draw the key and value
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(current_x_position + 5, text_y_position + row_height / 4, f"{key}:")
-            c.setFont("Helvetica", 12)
-            c.drawString(current_x_position + 5, text_y_position - (row_height + 15) / 4, str(value))
+            else:
+                # Draw the key and value
+                c.setFont("Helvetica-Bold", 12)
+                c.drawString(current_x_position + 5, text_y_position + row_height / 6, f"{key}:")
+                c.setFont("Helvetica", 12)
+                c.drawString(current_x_position + 5, text_y_position - (row_height) / 6, str(value))
             
             # Draw the grid cell
-            c.rect(current_x_position, row_y_position - cell_height, cell_width, cell_height, stroke=1, fill=0)
+            c.rect(current_x_position, row_y_position - row_height, cell_width, row_height, stroke=1, fill=0)
             current_x_position += cell_width
-        current_y_position -= cell_height
+        current_y_position -= row_height
     return current_y_position
 
 
@@ -107,25 +116,25 @@ def draw_invoice_info(c, height, invoice):
     c.drawString(90, height - 170, " {} {}".format(invoice.customer.first_name, invoice.customer.last_name))
     c.drawString(400, height - 170, "{}".format(invoice.customer.phone))
 
-def draw_tearaway_section(c, invoice, x_position,x_header_position, y_position, row_height, col_width, data_dict):
-    print(col_width)
+def draw_tearaway_section(c, invoice, x_position, x_header_position, y_position, row_height, col_width, data_dict):
     c.setLineWidth(1)
     c.setStrokeColorRGB(0, 0, 0)
-    c.setDash(1, 2)
-    line_y_position = y_position +30
-    c.line(x_position, line_y_position, x_position + col_width , line_y_position)
+    line_y_position = y_position + 30
+    c.line(x_position, line_y_position, x_position + col_width, line_y_position)
 
-    next_y_position = draw_header(c,x_header_position,y_position, invoice)
+    next_y_position = draw_header(c, x_header_position, y_position, invoice)
     grid_structure = [
-        [('Invoice No', 1, 1), ('Delivery Date', 1, 1), ('Balance', 1, 2)]
+        [('Invoice No', 1, 1), ('Delivery Date', 1, 1)],
+        [('Total', 1, 1), ('Advance', 1, 1)],
+        [('Balance', 1, 2)]
     ]
-    y_position = create_custom_grid(c, grid_structure, x_position, next_y_position, row_height + 60, col_width / 3, data_dict)
+    y_position = create_custom_grid(c, grid_structure, x_position, next_y_position, row_height, col_width / 2, data_dict)
     return y_position
 
 def draw_footer(c, width, invoice):
     c.setLineWidth(1)
     c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, 50, "© 2023 {}. All rights reserved.".format(invoice.organization.name))
+    c.drawCentredString(width / 2, 10, "© 2023 {}. All rights reserved.".format(invoice.organization.name))
 
 
 
