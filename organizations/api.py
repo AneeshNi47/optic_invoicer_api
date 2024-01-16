@@ -201,7 +201,7 @@ class ModelReportsOrganizationData(APIView):
             model_object =get_model_object(model)
             date_request_string = request.query_params.get('date_request_string')
             
-            if date_request_string is  "all_time":
+            if date_request_string is "all_time":
                 report_end_date = None
                 report_start_date = None
                 get_all = True
