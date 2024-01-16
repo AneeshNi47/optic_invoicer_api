@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+
 class Organization(models.Model):
     name = models.CharField(max_length=255)
     address_first_line = models.CharField(max_length=255)
@@ -20,6 +21,11 @@ class Organization(models.Model):
     total_prescriptions = models.PositiveIntegerField(default=0, verbose_name="total_prescriptions")
     total_inventory = models.PositiveIntegerField(default=0, verbose_name="total_inventory")
     total_invoices = models.PositiveIntegerField(default=0, verbose_name="total_invoices")
+    customer_statistics = models.JSONField(default=list, blank=True, null=True)
+    prescription_statistics =  models.JSONField(default=list, blank=True, null=True)
+    inventory_statistics =  models.JSONField(default=list, blank=True, null=True)
+    invoice_statistics =  models.JSONField(default=list, blank=True, null=True)
+
 
     # Default fields
     created_by = models.ForeignKey(User, related_name="organizations_created", on_delete=models.SET_NULL, null=True)

@@ -20,7 +20,34 @@ class OrganizationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'owner': {'required': False},  # Set 'required' to False
         }
+class ReportDataSerializer(serializers.Serializer):
+    start_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    end_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    total_inventory = serializers.IntegerField()
+    total_invoices = serializers.IntegerField()
+    total_customers = serializers.IntegerField()
+    total_prescriptions = serializers.IntegerField()
+    invoice_statistics = serializers.ListField(
+        child=serializers.DictField()
+    )
+    inventory_statistics = serializers.ListField(
+        child=serializers.DictField()
+    )
+    customer_statistics = serializers.ListField(
+        child=serializers.DictField()
+    )
+    prescription_statistics = serializers.ListField(
+        child=serializers.DictField()
+    )
 
+class ModelReportDataSerializer(serializers.Serializer):
+    start_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    end_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    model_name=serializers.CharField()
+    total_count= serializers.IntegerField()
+    monthly_statistics = serializers.ListField(
+        child=serializers.DictField()
+    )
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
