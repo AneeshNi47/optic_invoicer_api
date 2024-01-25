@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 import datetime
 from rest_framework.response import Response
 from customers.models import Customer
-from .models import Organization
+from .models import Organization, Subscription, Payment
 from rest_framework.views import APIView
 from .serializers import OrganizationSerializer, OrganizationStaffSerializer,ListOrganizationStaffSerializer,ModelReportDataSerializer, ReportDataSerializer
 from .utils import compute_reports, compute_statistics,get_model_object, convert_date_request_to_start_end_dates, date_request_dict
@@ -288,3 +288,33 @@ class ReportsOrganizationData(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class CheckOrganizationValidity(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        organization =request.get_organization()
+        try:
+            # Fetch subscriptions for the given organization
+            subscriptions = Subscription.objects.filter(organization_id=organization.id)
+            
+            # Prepare data for each subscription
+            subscriptions_data = []
+            for subscription in subscriptions:
+                subscription_data = {
+                    'subscription_id': subscription.id,
+                    'subscription_type': subscription.subscription_type,
+                    'status': subscription.status,
+                    'payments': [{
+                        'payment_id': payment.id,
+                        'amount': payment.amount,
+                        'payment_mode': payment.payment_mode,
+                        'created_on': payment.created_on
+                    } for payment in subscription.payments.all()]
+                }
+                subscriptions_data.append(subscription_data)
+
+            return Response(subscriptions_data, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
