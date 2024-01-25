@@ -77,7 +77,7 @@ class OrganizationStaffSerializer(serializers.Serializer):
         organization_data = validated_data.pop('organization')
         staff_data = validated_data.pop('staff')
         username = staff_data['user']['username']
-        password = User.objects.make_random_password(length=9)
+        password = staff_data['user']['password']
         with transaction.atomic():
             organization = Organization.objects.create(**organization_data,owner=self.context['request'].user)
             staff_data['user']['password'] = password
@@ -128,7 +128,6 @@ class OrganizationStaffSerializer(serializers.Serializer):
                 
                 }
             }
-        
         logger.info('New Organization and SuperStaff created by %s',self.context['request'].user)
         return saved_organization
     

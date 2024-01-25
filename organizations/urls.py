@@ -1,12 +1,13 @@
 from rest_framework import routers
 from django.urls import path
-from .api import OrganizationViewSet, GetOrganizationView, CreateOrganizationAndStaffView,ModelReportsOrganizationData, OrganizationListView,RefreshOrganizationData, ReportsOrganizationData
+from .api import OrganizationViewSet, CheckOrganizationValidity,GetOrganizationView, CreateOrganizationAndStaffView,ModelReportsOrganizationData, OrganizationListView,RefreshOrganizationData, ReportsOrganizationData
 
 
 router = routers.DefaultRouter()
 router.register('api/organization', OrganizationViewSet, 'organizations')
 
 urlpatterns = [
+    path('api/subscription_check', CheckOrganizationValidity.as_view(), name='organization_validity'),
     path('api/get_organization', GetOrganizationView.as_view(), name='get_organization'),
     path('api/refresh_organization', RefreshOrganizationData.as_view(), name='refresh_organization'),
     path('api/report_organization', ReportsOrganizationData.as_view(), name='report_organization'),

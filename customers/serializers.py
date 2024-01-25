@@ -1,5 +1,13 @@
 from .models import Customer, Prescription
 from rest_framework import serializers
+from invoices.models import Invoice
+
+class InvoiceCustomerGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = '__all__'
+        read_only_fields = ('organization',)
+
 
 class PrescriptionGetSerializer(serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
@@ -11,6 +19,7 @@ class PrescriptionGetSerializer(serializers.ModelSerializer):
 class CustomerGetSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     prescriptions = PrescriptionGetSerializer(many=True, read_only=True)  # Add this line
+    invoices = InvoiceCustomerGetSerializer(many=True,read_only=True)
 
     class Meta:
         model = Customer
