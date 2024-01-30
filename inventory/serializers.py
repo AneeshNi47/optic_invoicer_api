@@ -28,7 +28,7 @@ class InventorySerializer(serializers.ModelSerializer):
             organization = request.get_organization() 
             validated_data['created_by'] = user
             validated_data['organization'] = organization
-            logger.info('New Inventory Object created by {}',self.context['request'].user)
+            logger.info('New Inventory Object created by {}',user)
             return super().create(validated_data)
         except Exception as e:
             logger.error('Inventory Creation Error occurred: %s', e)

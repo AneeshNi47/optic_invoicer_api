@@ -1,6 +1,6 @@
 from rest_framework import routers
 from django.urls import path
-from .api import OrganizationViewSet, CheckOrganizationValidity,GetOrganizationView, CreateOrganizationAndStaffView,ModelReportsOrganizationData, OrganizationListView,RefreshOrganizationData, ReportsOrganizationData
+from .api import OrganizationViewSet,SubscriptionViewSet, CheckOrganizationValidity,GetOrganizationView,CheckMailService, CreateOrganizationAndStaffView,ModelReportsOrganizationData, OrganizationListView,RefreshOrganizationData, ReportsOrganizationData
 
 
 router = routers.DefaultRouter()
@@ -8,6 +8,17 @@ router.register('api/organization', OrganizationViewSet, 'organizations')
 
 urlpatterns = [
     path('api/subscription_check', CheckOrganizationValidity.as_view(), name='organization_validity'),
+    path('api/email_check', CheckMailService.as_view(), name='check_mail_service'),
+    path('api/subscription', SubscriptionViewSet.as_view({
+        'get': 'list',  # HTTP GET to list subscriptions
+        'post': 'create',  # HTTP POST to create a subscription
+    }), name='subscription'),
+    path('api/subscriptions/<int:pk>/', SubscriptionViewSet.as_view({
+        'get': 'retrieve',  # HTTP GET to retrieve a specific subscription
+        'put': 'update',  # HTTP PUT to update a specific subscription
+        'patch': 'partial_update',  # HTTP PATCH for partial updates
+        'delete': 'destroy',  # HTTP DELETE to delete a subscription
+    }), name='subscription-detail'),
     path('api/get_organization', GetOrganizationView.as_view(), name='get_organization'),
     path('api/refresh_organization', RefreshOrganizationData.as_view(), name='refresh_organization'),
     path('api/report_organization', ReportsOrganizationData.as_view(), name='report_organization'),
