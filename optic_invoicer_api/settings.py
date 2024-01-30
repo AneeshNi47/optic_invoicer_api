@@ -124,6 +124,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 FRONTEND_URL = 'https://optic-invoicer-ui.vercel.app/'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_FROM_EMAIL =  env('EMAIL_FROM_EMAIL')
 EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_PORT = env('EMAIL_PORT')
 EMAIL_USE_TLS = True

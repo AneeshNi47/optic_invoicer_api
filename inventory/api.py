@@ -1,7 +1,9 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from optic_invoicer_api.custom_cursor_pagination import CustomCursorPagination
+from organizations.utils import check_create_invoice_permission
 from .models import Inventory, InventoryCSV
 from .tasks import download_and_process_file
 from .serializers import InventorySerializer, BulkInventorySerializer, InventoryCSVSerializer
@@ -59,6 +61,10 @@ class InventoryViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
+        organization = self.request.get_organization()
+        latest_subscription, create_invoice_permission = check_create_invoice_permission(organization)
+        if not create_invoice_permission:
+            raise PermissionDenied({"error": f"Your {latest_subscription.subscription_type} subscription has ended. Please contact the administrator to add more Inventory."})
         serializer.save(organization=self.request.get_organization(), created_by=user)
 
     def perform_update(self, serializer):
@@ -135,7 +141,6 @@ class InventoryCSVViewSet(viewsets.ModelViewSet):
         return InventoryCSV.objects.filter(organization=self.request.get_organization())
 
     def perform_create(self, serializer):
-        user = self.request.user
         serializer.save(organization=self.request.get_organization(), created_by=user)
 
 class ProcessCSVViewSet(APIView):

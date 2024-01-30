@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from .utils import generate_random_password
 
 import logging
 
@@ -77,15 +78,14 @@ class OrganizationStaffSerializer(serializers.Serializer):
         organization_data = validated_data.pop('organization')
         staff_data = validated_data.pop('staff')
         username = staff_data['user']['username']
-        password = staff_data['user']['password']
+        #password = staff_data['user']['password']
+        password = generate_random_password(8)
         with transaction.atomic():
             organization = Organization.objects.create(**organization_data,owner=self.context['request'].user)
             staff_data['user']['password'] = password
             staff = StaffSerializer().create(staff_data, organization=organization)
             staff.organization = organization
             staff.save()
-
-
             # Update the related User instance
             user = staff.user
             user.first_name = staff_data['first_name']
@@ -112,7 +112,15 @@ class OrganizationStaffSerializer(serializers.Serializer):
                 })
                 plain_message = strip_tags(html_message)
 
-                send_mail(mail_subject, plain_message, settings.EMAIL_HOST_USER, [staff_data['email']],html_message=html_message)
+                send_mail( 
+                        subject= mail_subject, 
+                        message= plain_message, 
+                        from_email= settings.EMAIL_FROM_EMAIL, 
+                        auth_user=settings.EMAIL_HOST_USER,
+                        auth_password=settings.EMAIL_HOST_PASSWORD,
+                        recipient_list=[staff_data['email']],
+                        html_message=html_message
+                    )
             except Exception as e:
                 logger.error('Error Sending Welcome main!: %s', e)
         saved_organization =  {
@@ -172,3 +180,15 @@ class ListOrganizationStaffSerializer(serializers.ModelSerializer):
     def get_subscription_status(self, obj):
         subscription = Subscription.objects.filter(organization=obj).first()
         return ListOrganizationSubscriptionSerializer(subscription).data if subscription else None
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    payments = PaymentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = '__all__'

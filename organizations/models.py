@@ -74,7 +74,10 @@ class Subscription(models.Model):
         ("Stopped", "Stopped"),
         ("Trial","Trial")
     ]
-    status = models.CharField(max_length=10, choices=TYPE_CHOICES, default="Trial")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Trial")
+    trial_start_date = models.DateTimeField(null=True)
+    trial_end_date = models.DateTimeField(null=True)
+    is_active = models.BooleanField(default=True)
     payments = models.ManyToManyField(Payment, related_name="subscription_payments",null=True, blank=True,)
 
     # Default fields
@@ -84,5 +87,14 @@ class Subscription(models.Model):
     updated_on = models.DateTimeField(auto_now=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            # Deactivate other active subscriptions for the same organization
+            Subscription.objects.filter(
+                organization=self.organization,
+                is_active=True
+            ).exclude(
+                id=self.id  # Exclude the current subscription if it's already in the database
+            ).update(is_active=False)
 
-
+        super().save(*args, **kwargs)

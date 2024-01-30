@@ -1,14 +1,34 @@
 
 
 import datetime
+from django.utils import timezone
 from django.apps import apps
+from .models import Subscription
 from inventory.models import Inventory
 from invoices.models import Invoice
 from customers.models import Customer, Prescription
-
+import random
+import string
 from django.db.models import Count, Sum, IntegerField
 from django.db.models.functions import ExtractYear, ExtractMonth
 
+def generate_random_password(length):
+    if length < 8:
+        raise ValueError("Password length should be at least 8 characters")
+
+    letters = string.ascii_letters  # upper and lowercase letters
+    digits = string.digits          # numbers
+    special_chars = string.punctuation  # special character
+    all_chars = letters + digits + special_chars
+
+    password = [
+        random.choice(letters),
+        random.choice(digits),
+        random.choice(special_chars)
+    ]
+    password += [random.choice(all_chars) for _ in range(length - 3)]
+    random.shuffle(password)
+    return ''.join(password)
 
 
 
@@ -42,8 +62,8 @@ def compute_reports(organization, start_date=None, end_date=None, get_all=False)
         # Convert stats to required format
         invoice_statistics = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count'], 'value': float(stat['value'])} for stat in invoice_stats]
         inventory_statistics = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count'], 'value': float(stat['value'])} for stat in inventory_stats]
-        customer_statistics = [{'year': stat['year'], 'month': stat['month'], 'value': stat['count']} for stat in customer_stats]
-        prescription_statistics = [{'year': stat['year'], 'month': stat['month'], 'value': stat['count']} for stat in prescription_stats]
+        customer_statistics = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count']} for stat in customer_stats]
+        prescription_statistics = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count']} for stat in prescription_stats]
 
         report_data = {
             "total_inventory": Inventory.objects.filter(organization=organization.id).count(),
@@ -96,6 +116,11 @@ def get_this_month_start_end_date():
     first_day_of_month = end_date.replace(day=1)
     return first_day_of_month,end_date
 
+def get_this_year_start_end_date():
+    current_date = datetime.date.today()
+    start_date = datetime.date(current_date.year, 1, 1)  # January 1st of the current year
+    end_date = datetime.date(current_date.year, 12, 31)  # December 31st of the current year
+    return start_date, end_date
 
 def get_start_date_end_date_previous_month():
     today = datetime.date.today()
@@ -104,7 +129,46 @@ def get_start_date_end_date_previous_month():
     first_day_of_previous_month = last_day_of_previous_month.replace(day=1)
     return first_day_of_previous_month, last_day_of_previous_month
 
+def get_this_week_start_end_date():
+    current_date = datetime.date.today()
+    start_date = current_date - datetime.timedelta(days=current_date.weekday())
+    end_date = start_date + datetime.timedelta(days=6)
+    return start_date, end_date
+
+def get_last_year_start_end_date():
+    current_year = datetime.date.today().year
+    last_year = current_year - 1
+    start_date = datetime.date(last_year, 1, 1)
+    end_date = datetime.date(last_year, 12, 31)
+    return start_date, end_date
+
+def get_all_time_start_end_date():
+    start_date = datetime.date(2020, 1, 1)  # Fixed start date
+    end_date = datetime.date.today()  # Today's date
+    return start_date, end_date
+
 date_request_dict={
+        "all_time": get_all_time_start_end_date(),
+         "this_year": get_this_year_start_end_date(),
+         "this_week": get_this_week_start_end_date(),
          "this_month": get_this_month_start_end_date(),
-         "last_month":get_start_date_end_date_previous_month()
+         "last_month":get_start_date_end_date_previous_month(),
+         "last_year":get_last_year_start_end_date()
     }
+
+
+def check_create_invoice_permission(organization):
+    latest_subscription = Subscription.objects.filter(
+                organization_id=organization.id, 
+                is_active=True
+            ).order_by('-created_on').first() 
+    today = timezone.now().date()
+    trial_start_date = latest_subscription.trial_start_date.date() if latest_subscription.trial_start_date else None
+    trial_end_date = latest_subscription.trial_end_date.date() if latest_subscription.trial_end_date else None
+
+    create_invoice_permission = (
+                trial_start_date <= today <= trial_end_date
+                if trial_start_date and trial_end_date
+                else False
+            )
+    return latest_subscription, create_invoice_permission

@@ -1,11 +1,16 @@
 from rest_framework import viewsets, permissions, status
 import datetime
+from django.utils import timezone
 from rest_framework.response import Response
 from customers.models import Customer
+from django.conf import settings
 from .models import Organization, Subscription, Payment
 from rest_framework.views import APIView
-from .serializers import OrganizationSerializer, OrganizationStaffSerializer,ListOrganizationStaffSerializer,ModelReportDataSerializer, ReportDataSerializer
-from .utils import compute_reports, compute_statistics,get_model_object, convert_date_request_to_start_end_dates, date_request_dict
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from .serializers import OrganizationSerializer,SubscriptionSerializer, OrganizationStaffSerializer,ListOrganizationStaffSerializer,ModelReportDataSerializer, ReportDataSerializer
+from .utils import compute_reports, compute_statistics,get_model_object,check_create_invoice_permission, convert_date_request_to_start_end_dates, date_request_dict
 from django.db.models.functions import ExtractYear, ExtractMonth
 class OrganizationViewSet(viewsets.ModelViewSet):
     permission_classes = [
@@ -230,7 +235,7 @@ class ModelReportsOrganizationData(APIView):
             if model == "Invoice" or model=="Inventory":
                 report_list = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count'], 'value': float(stat['value'])} for stat in report_queryset]
             else:
-                report_list = [{'year': stat['year'], 'month': stat['month'], 'value': stat['count']} for stat in report_queryset]
+                report_list = [{'year': stat['year'], 'month': stat['month'], 'count': stat['count']} for stat in report_queryset]
             
             report_data = {"monthly_statistics":report_list }
             report_data["model_name"]=model
@@ -294,27 +299,80 @@ class CheckOrganizationValidity(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        organization =request.get_organization()
-        try:
-            # Fetch subscriptions for the given organization
-            subscriptions = Subscription.objects.filter(organization_id=organization.id)
-            
-            # Prepare data for each subscription
-            subscriptions_data = []
-            for subscription in subscriptions:
-                subscription_data = {
-                    'subscription_id': subscription.id,
-                    'subscription_type': subscription.subscription_type,
-                    'status': subscription.status,
-                    'payments': [{
-                        'payment_id': payment.id,
-                        'amount': payment.amount,
-                        'payment_mode': payment.payment_mode,
-                        'created_on': payment.created_on
-                    } for payment in subscription.payments.all()]
-                }
-                subscriptions_data.append(subscription_data)
+        organization = request.get_organization()
 
-            return Response(subscriptions_data, status=status.HTTP_200_OK)
-        except Organization.DoesNotExist:
+        if not organization:
             return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # Fetch the latest active subscription for the given organization
+            latest_subscription, create_invoice_permission = check_create_invoice_permission(organization)
+            if latest_subscription is None:
+                return Response({'message': 'No active subscriptions found'}, status=status.HTTP_200_OK)
+            # Prepare data for the latest subscription
+            subscription_data = {
+                'subscription_id': latest_subscription.id,
+                'trial_start_date': latest_subscription.trial_start_date,
+                'trial_end_date': latest_subscription.trial_end_date,
+                'subscription_type': latest_subscription.subscription_type,
+                'create_invoice_permission': create_invoice_permission,
+                'status': latest_subscription.status,
+                'created_on': latest_subscription.created_on,
+                'payments': [{
+                    'payment_id': payment.id,
+                    'amount': payment.amount,
+                    'payment_mode': payment.payment_mode,
+                    'created_on': payment.created_on
+                } for payment in latest_subscription.payments.all()]
+            }
+
+            return Response(subscription_data, status=status.HTTP_200_OK)
+
+        except Exception as error:
+            return Response({'error': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckMailService(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        organization =request.get_organization()
+        test_information = {
+            "test_value1": "Tester",
+            "email": "dr2633@gmail.com"
+        }
+        try:
+            mail_subject = 'Welcome to Our Platform'
+            html_message = render_to_string('email/mail_check.html', {
+                    'test_information': test_information,
+                    'organization': organization,
+                })
+            plain_message = strip_tags(html_message)
+
+            mail_send_status = send_mail(
+                subject= mail_subject, 
+                message= plain_message, 
+                from_email= settings.EMAIL_FROM_EMAIL, 
+                auth_user=settings.EMAIL_HOST_USER,
+                auth_password=settings.EMAIL_HOST_PASSWORD,
+                recipient_list=[test_information['email']],
+                html_message=html_message
+                )
+            return Response(mail_send_status, status=status.HTTP_200_OK)
+        except Exception as error:
+            print(error)
+            return Response({'error': "Unable to send mail"}, status=status.HTTP_404_NOT_FOUND)
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+
+    def get_queryset(self):
+        organization = self.request.get_organization()
+        if self.request.user.is_authenticated and organization:
+            return Subscription.objects.filter(organization=organization.id)
+        else:
+            return Subscription.objects.none()
+        
+
+

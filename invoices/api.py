@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from customers.serializers import CustomerSerializer, PrescriptionSerializer
 from customers.models import Customer, Prescription
 from django.http import HttpResponse
+from organizations.utils import check_create_invoice_permission
 from io import BytesIO
 from .models import Invoice
 from .create_invoice import create_invoice_pdf, create_invoice_pdf_customer
@@ -94,7 +95,13 @@ class CreateInvoiceView(APIView):
     def post(self, request):
         # Prepare data for serialization
         data = request.data
-        data['organization'] = request.get_organization()
+        organization = request.get_organization()
+        data['organization'] = organization
+
+        latest_subscription, create_invoice_permission = check_create_invoice_permission(organization)
+
+        if not create_invoice_permission:
+            return Response({"error": f"Your {latest_subscription.subscription_type} has ended please contact administrator to add more Invoices"}, status=status.HTTP_400_BAD_REQUEST)
         # Serialize and validate data
         serializer = InvoiceCreateSerializer(data=data, context={'request': request})
         # Check validation status
