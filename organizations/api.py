@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions, status
 import datetime
-from django.utils import timezone
+from django.contrib.auth.models import User
 from rest_framework.response import Response
 from customers.models import Customer
 from django.conf import settings
@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from .serializers import OrganizationSerializer,SubscriptionSerializer, OrganizationStaffSerializer,ListOrganizationStaffSerializer,ModelReportDataSerializer, ReportDataSerializer
 from .utils import compute_reports, compute_statistics,get_model_object,check_create_invoice_permission, convert_date_request_to_start_end_dates, date_request_dict
-from django.db.models.functions import ExtractYear, ExtractMonth
+
 class OrganizationViewSet(viewsets.ModelViewSet):
     permission_classes = [
         permissions.IsAuthenticated
@@ -78,8 +78,7 @@ class CreateOrganizationAndStaffView(APIView):
             "email": "sarah.jones@email.com",
             "staff_superuser": true,
             "user": {
-                "username": "sarah.jones",
-                "password": "seattle2023"
+                "username": "sarah.jones"
             }
         }
     }
@@ -376,3 +375,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         
 
 
+class CheckUsernameView(APIView):
+    def get(self, request, format=None):
+        username = request.GET.get('username', None)
+        if username is None:
+            return Response({'error': 'Username parameter is missing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({'exists': True},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'exists': False},status=status.HTTP_200_OK)

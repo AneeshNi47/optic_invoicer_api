@@ -8,7 +8,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from .utils import generate_random_password
-
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,6 @@ class OrganizationStaffSerializer(serializers.Serializer):
         organization_data = validated_data.pop('organization')
         staff_data = validated_data.pop('staff')
         username = staff_data['user']['username']
-        #password = staff_data['user']['password']
         password = generate_random_password(8)
         with transaction.atomic():
             organization = Organization.objects.create(**organization_data,owner=self.context['request'].user)
@@ -92,12 +91,14 @@ class OrganizationStaffSerializer(serializers.Serializer):
             user.last_name = staff_data['last_name']
             user.email = staff_data['email']
             user.save()
-
+            today = datetime.now()
             # Create a subscription instance with default values
             Subscription.objects.create(
                 organization=organization,
                 subscription_type='Demo',
-                status='Trial'
+                status='Trial',
+                trial_start_date=today,
+                trial_end_date=today + timedelta(days=5)
             )
 
             try: 
