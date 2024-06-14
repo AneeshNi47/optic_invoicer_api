@@ -18,18 +18,18 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '*',
-    'https://optic-invoicer-ui.vercel.app/'
+    'https://optic-invoicer-ui.vercel.app/',
     'https://optic-invoicer-ui-v2-aneeshni47.vercel.app/',
     'https://optic-invoicer-ui-v2.vercel.app',
-    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com/'
+    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com/',
     'https://opticinvoicer.brocodesolutions.com/'
-    ]
+]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000/*',
     'http://localhost:3000/*',
     'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
-    
+
 ]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
@@ -39,6 +39,9 @@ CORS_ALLOWED_ORIGINS = [
     'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com',
     'https://opticinvoicer.brocodesolutions.com'
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -51,13 +54,13 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',  # Use RotatingFileHandler
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': './optic_invoicer_api/logs/logfile.log',
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',
         },
-        
+
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
@@ -77,8 +80,6 @@ LOGGING = {
 }
 
 
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -96,12 +97,13 @@ INSTALLED_APPS = [
     'customers',
     'inventory',
     'invoices',
-    'staff',  
-    'rest_framework_swagger',      
-    'rest_framework',               
-    'drf_yasg'  
+    'staff',
+    'wholesale',
+    'rest_framework_swagger',
+    'rest_framework',
+    'drf_yasg',
 ]
-REST_FRAMEWORK ={
+REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
     'DEFAULT_PAGINATION_CLASS': 'optic_invoicer_api.custom_cursor_pagination.CustomCursorPagination',
     'PAGE_SIZE': 10,  # Default page size
@@ -124,13 +126,13 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 FRONTEND_URL = 'https://opticinvoicer.brocodesolutions.com/'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_FROM_EMAIL =  env('EMAIL_FROM_EMAIL')
+EMAIL_FROM_EMAIL = env('EMAIL_FROM_EMAIL')
 EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_PORT = env('EMAIL_PORT')
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL=env('EMAIL_HOST_USER')
+DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 
 ROOT_URLCONF = 'optic_invoicer_api.urls'
 
@@ -177,7 +179,7 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default="ap-south-1")
 
-#CELERY_BROKER_URL = env('STACKHERO_RABBITMQ_AMQP_URL_TLS', None)
+# CELERY_BROKER_URL = env('STACKHERO_RABBITMQ_AMQP_URL_TLS', None)
 # Tell Django to use S3 for file storage
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
@@ -221,4 +223,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
