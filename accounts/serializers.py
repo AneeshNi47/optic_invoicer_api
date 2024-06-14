@@ -31,17 +31,20 @@ class LoginSerializer(serializers.Serializer):
 
                 # Ensure the user is associated with an organization
                 if organization is None:
-                    raise serializers.ValidationError("User is not associated with any organization.")
+                    raise serializers.ValidationError(
+                        "User is not associated with any organization.")
 
                 # Check if the organization is active
                 if not organization.is_active:
-                    raise serializers.ValidationError("The associated organization is not active.")
+                    raise serializers.ValidationError(
+                        "The associated organization is not active.")
 
             # User is associated with a Staff object
             if hasattr(user, 'staff'):
                 staff_instance = user.staff
-                org_serializer = OrganizationSerializer(staff_instance.organization)
-                
+                org_serializer = OrganizationSerializer(
+                    staff_instance.organization)
+
                 data['staff_details'] = {
                     'first_name': staff_instance.first_name,
                     'last_name': staff_instance.last_name,
@@ -73,22 +76,28 @@ class LoginSerializer(serializers.Serializer):
         raise serializers.ValidationError("Incorrect Credentials.")
 
 
-    
 class StaffSerializer(serializers.ModelSerializer):
     organization = OrganizationSerializer()
+
     class Meta:
         model = Staff
-        fields = ('first_name', 'last_name', 'designation', 'phone','organization', 'email', 'staff_superuser')
+        fields = ('first_name', 'last_name', 'designation', 'phone',
+                  'organization', 'email', 'staff_superuser')
+
 
 class CustomerSerializer(serializers.ModelSerializer):
     organization = OrganizationSerializer()
+
     class Meta:
         model = Customer
-        fields = ('first_name', 'last_name', 'phone', 'email','organization', 'gender')
+        fields = ('first_name', 'last_name', 'phone',
+                  'email', 'organization', 'gender')
+
 
 class UserSerializer(serializers.ModelSerializer):
     staff_details = serializers.SerializerMethodField(read_only=True)
-    customer_details = serializers.SerializerMethodField(read_only=True)  # Assuming you have a method for admin_details
+    customer_details = serializers.SerializerMethodField(
+        read_only=True)  # Assuming you have a method for admin_details
     user_type = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -117,7 +126,7 @@ class UserSerializer(serializers.ModelSerializer):
             return CustomerSerializer(customer_instance).data
         except Customer.DoesNotExist:
             return None
-        
+
     def get_user_type(self, obj):
         if obj.is_superuser:
             return 'admin'
@@ -127,3 +136,25 @@ class UserSerializer(serializers.ModelSerializer):
             return 'customer'
         else:
             return 'unknown'
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("No user with this email found.")
+        return value
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    uid = serializers.CharField(write_only=True)
+    token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError(
+                {"password": "Password fields didn't match."})
+        return attrs
