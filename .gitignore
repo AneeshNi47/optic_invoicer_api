@@ -57,3 +57,5 @@ optic_invoicer_api/.env
 
 
 logfile.log
+
+.flake8

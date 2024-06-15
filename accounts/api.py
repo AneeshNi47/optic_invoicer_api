@@ -1,4 +1,4 @@
-from rest_framework import permissions, status
+from rest_framework import permissions, generics, status
 from rest_framework.response import Response
 from knox.models import AuthToken
 from django.contrib.auth.models import User
@@ -10,8 +10,6 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework import generics, status
-from rest_framework.response import Response
 from .serializers import PasswordResetRequestSerializer, PasswordResetSerializer
 
 
@@ -127,8 +125,14 @@ class PasswordResetView(generics.GenericAPIView):
             if default_token_generator.check_token(user, serializer.validated_data['token']):
                 user.set_password(serializer.validated_data['new_password'])
                 user.save()
-                return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+                return Response(
+                    {"message": "Password reset successful."},
+                    status=status.HTTP_200_OK
+                )
             else:
-                return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Invalid token."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({"error": "Invalid uid."}, status=status.HTTP_400_BAD_REQUEST)
