@@ -8,6 +8,7 @@ from .models import Inventory, InventoryCSV
 from .tasks import download_and_process_file
 from .serializers import InventorySerializer, BulkInventorySerializer, InventoryCSVSerializer
 
+
 class InventoryViewSet(viewsets.ModelViewSet):
     """
     post:
@@ -15,7 +16,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
 
     # Request Sample
     ```
-    
+
     {
         "store_sku": "store_sku_0L002",
         "name": "Oakley lens 1",
@@ -56,8 +57,8 @@ class InventoryViewSet(viewsets.ModelViewSet):
     serializer_class = InventorySerializer
 
     def get_queryset(self):
-        user = self.request.user
-        return Inventory.objects.filter(organization=self.request.get_organization(), is_active=True)
+        organization = self.request.get_organization()
+        return Inventory.objects.filter(organization=organization, is_active=True)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -83,10 +84,10 @@ class BulkInventoryCreateView(APIView):
     serializer_class = BulkInventorySerializer
 
     def post(self, request, *args, **kwargs):
-        organization = request.get_organization() 
+        organization = request.get_organization()
         if not organization:
             return Response({'error': 'User is not associated with any organization.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
@@ -117,24 +118,21 @@ class InventorySearchView(APIView):
         elif type:
             queryset = queryset.filter(item_type__icontains=type)
 
-        
         # Apply custom cursor pagination
         paginator = CustomCursorPagination()
         page = paginator.paginate_queryset(queryset, request)
-        
+
         if page is not None:
             serializer = InventorySerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
 
         serializer = InventorySerializer(queryset, many=True)
         return Response(serializer.data)
-    
 
 
 class InventoryCSVViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated] 
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = InventoryCSVSerializer
-
 
     def get_queryset(self):
         user = self.request.user
@@ -142,6 +140,7 @@ class InventoryCSVViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(organization=self.request.get_organization(), created_by=user)
+
 
 class ProcessCSVViewSet(APIView):
     def get(self, request, format=None):

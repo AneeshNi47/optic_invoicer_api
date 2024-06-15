@@ -4,9 +4,10 @@ from .models import Inventory, InventoryCSV
 import logging
 
 logger = logging.getLogger(__name__)
+
+
 class InventorySerializer(serializers.ModelSerializer):
     item_type = serializers.ChoiceField(choices=Inventory.TYPE_CHOICES)
-
 
     class Meta:
         model = Inventory
@@ -16,7 +17,7 @@ class InventorySerializer(serializers.ModelSerializer):
     def validate(self, data):
         user = self.context['request'].user
 
-        if 'organization' in data and data['organization'] != user.get_organization(): 
+        if 'organization' in data and data['organization'] != user.get_organization():
             raise serializers.ValidationError("You cannot create or update inventory for another organization.")
 
         return data
@@ -25,10 +26,10 @@ class InventorySerializer(serializers.ModelSerializer):
         try:
             user = self.context['request'].user
             request = self.context['request']
-            organization = request.get_organization() 
+            organization = request.get_organization()
             validated_data['created_by'] = user
             validated_data['organization'] = organization
-            logger.info('New Inventory Object created by {}',user)
+            logger.info('New Inventory Object created by {}', user)
             return super().create(validated_data)
         except Exception as e:
             logger.error('Inventory Creation Error occurred: %s', e)
@@ -37,6 +38,7 @@ class InventorySerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['updated_by'] = user
         return super().update(instance, validated_data)
+
 
 class BulkInventorySerializer(serializers.Serializer):
     inventories = InventorySerializer(many=True)
@@ -60,7 +62,6 @@ class BulkInventorySerializer(serializers.Serializer):
         # so we'll serialize it using the InventorySerializer
         serializer = InventorySerializer(obj, many=True)
         return {'inventories': serializer.data}
-
 
 
 class InventoryCSVSerializer(serializers.ModelSerializer):

@@ -1,7 +1,6 @@
 from rest_framework import routers
 from django.urls import path
-from .api import InventoryViewSet, InventorySearchView,BulkInventoryCreateView, InventoryCSVViewSet, ProcessCSVViewSet
-from django.urls import path
+from .api import InventoryViewSet, InventorySearchView, BulkInventoryCreateView, InventoryCSVViewSet, ProcessCSVViewSet
 
 
 router = routers.DefaultRouter()

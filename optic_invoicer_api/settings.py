@@ -11,26 +11,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hjuv&sz@=43_)v-(**9$y442q7z**#*3lwrk@m@2#bo^j%y#6_'
+SECRET_KEY = env('SECRET_KEY', default='your-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = [
     '*',
-    'https://optic-invoicer-ui.vercel.app/',
-    'https://optic-invoicer-ui-v2-aneeshni47.vercel.app/',
-    'https://optic-invoicer-ui-v2.vercel.app',
-    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com/',
-    'https://opticinvoicer.brocodesolutions.com/'
+    'optic-invoicer-ui.vercel.app',
+    'optic-invoicer-ui-v2-aneeshni47.vercel.app',
+    'optic-invoicer-ui-v2.vercel.app',
+    'optic-invoicer-api-fbd12c65eacc.herokuapp.com',
+    'opticinvoicer.brocodesolutions.com'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000/*',
-    'http://localhost:3000/*',
-    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com'
-
+    'http://localhost:3000',
+    'https://optic-invoicer-ui.vercel.app',
+    'https://optic-invoicer-ui-v2-aneeshni47.vercel.app',
+    'https://optic-invoicer-ui-v2.vercel.app',
+    'https://optic-invoicer-api-fbd12c65eacc.herokuapp.com',
+    'https://opticinvoicer.brocodesolutions.com'
 ]
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://optic-invoicer-ui.vercel.app',
@@ -42,6 +45,14 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Security settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -223,3 +234,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Ensure HTTPS in pagination links in production
+if not DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
+    ]
+
+    # Ensure HTTPS in pagination links
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = True

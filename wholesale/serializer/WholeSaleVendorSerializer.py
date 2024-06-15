@@ -1,5 +1,6 @@
-from rest_framework import serializers 
-from ..models import WholeSaleVendor, WholeSaleInventory
+from rest_framework import serializers
+from ..models import WholeSaleVendor
+
 
 class WholeSaleVendorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,7 +10,7 @@ class WholeSaleVendorSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context['request']
-        organization = request.get_organization() 
+        organization = request.get_organization()
         validated_data['organization'] = organization
         validated_data['created_by'] = request.user
         return super().create(validated_data)
@@ -18,5 +19,3 @@ class WholeSaleVendorSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['updated_by'] = user
         return super().update(instance, validated_data)
-
-
