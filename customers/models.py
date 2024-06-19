@@ -26,7 +26,7 @@ class Customer(models.Model):
         ('N', 'Prefer not to say'),
     )
     phone = models.CharField(max_length=20)
-    email = models.EmailField()
+    email = models.EmailField(null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     THEME_MODE_CHOICES = (
