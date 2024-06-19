@@ -2,6 +2,7 @@ from .models import Customer, Prescription
 from rest_framework import serializers
 from invoices.models import Invoice
 
+
 class InvoiceCustomerGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
@@ -11,25 +12,29 @@ class InvoiceCustomerGetSerializer(serializers.ModelSerializer):
 
 class PrescriptionGetSerializer(serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
+
     class Meta:
-        model= Prescription
+        model = Prescription
         exclude = ('organization',)
         read_only_fields = ('organization',)
+
 
 class CustomerGetSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     prescriptions = PrescriptionGetSerializer(many=True, read_only=True)  # Add this line
-    invoices = InvoiceCustomerGetSerializer(many=True,read_only=True)
+    invoices = InvoiceCustomerGetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Customer
         exclude = ('organization',)
         read_only_fields = ('organization',)
 
+
 class CustomerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
+
     class Meta:
-        model= Customer
+        model = Customer
         exclude = ('organization',)
         read_only_fields = ('organization',)
 
@@ -55,28 +60,18 @@ class CustomerSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"phone": "This phone number is already registered in the organization."})
 
         # Check for email uniqueness
-        email_query = Customer.objects.filter(organization=organization, email=email)
-        if customer_id:
-            email_query = email_query.exclude(id=customer_id)
-        if email_query.exists():
-            raise serializers.ValidationError({"email": "This email is already registered in the organization."})
+        if email:
+            email_query = Customer.objects.filter(organization=organization, email=email)
+            if customer_id:
+                email_query = email_query.exclude(id=customer_id)
+            if email_query.exists():
+                raise serializers.ValidationError({"email": "This email is already registered in the organization."})
 
         return data
 
 
-
-
-
-
 class PrescriptionSerializer(serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
-    class Meta:
-        model= Prescription
-        exclude = ('organization',)
-        read_only_fields = ('organization',)
-
-    class PrescriptionSerializer(serializers.ModelSerializer):
-        customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all(), required=False)
 
     class Meta:
         model = Prescription

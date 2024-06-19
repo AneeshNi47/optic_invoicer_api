@@ -1,6 +1,6 @@
 from rest_framework import routers
 from django.urls import path
-from .api import OrganizationViewSet,SubscriptionViewSet,CheckUsernameView, CheckOrganizationValidity,GetOrganizationView,CheckMailService, CreateOrganizationAndStaffView,ModelReportsOrganizationData, OrganizationListView,RefreshOrganizationData, ReportsOrganizationData
+from .api import OrganizationViewSet, SubscriptionViewSet, CheckUsernameView, CheckOrganizationValidity, GetOrganizationView, CheckMailService, CreateOrganizationAndStaffView, ModelReportsOrganizationData, OrganizationListView, RefreshOrganizationData, ReportsOrganizationData
 
 
 router = routers.DefaultRouter()
