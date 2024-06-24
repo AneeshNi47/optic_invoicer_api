@@ -173,7 +173,7 @@ if os.environ.get('DATABASE_URL'):
     if 'sslmode=require' not in DATABASE_URL:
         DATABASE_URL = f"{DATABASE_URL}?sslmode=require"
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=60, ssl_require=True)
     }
 else:
     DATABASES = {
