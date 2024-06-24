@@ -169,8 +169,11 @@ WSGI_APPLICATION = 'optic_invoicer_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 if os.environ.get('DATABASE_URL'):
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if 'sslmode=require' not in DATABASE_URL:
+        DATABASE_URL = f"{DATABASE_URL}?sslmode=require"
     DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
     }
 else:
     DATABASES = {
@@ -183,7 +186,6 @@ else:
             'PORT': env('DB_PORT'),
         }
     }
-
 
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
