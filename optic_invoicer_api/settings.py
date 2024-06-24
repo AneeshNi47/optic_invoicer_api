@@ -170,13 +170,15 @@ WSGI_APPLICATION = 'optic_invoicer_api.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 if os.environ.get('DATABASE_URL'):
     DATABASE_URL = os.environ.get('DATABASE_URL')
+
+    if DATABASE_URL and 'sslmode=require' not in DATABASE_URL:
+        DATABASE_URL = f"{DATABASE_URL}?sslmode=require"
+
     DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
     }
+
     DATABASES['default']['ENGINE'] = 'django_db_geventpool.backends.postgresql_psycopg2'
-    DATABASES['default']['OPTIONS'] = {
-        'MAX_CONNS': 20,  # maximum number of connections in the pool
-    }
 else:
     DATABASES = {
         'default': {
