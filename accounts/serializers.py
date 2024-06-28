@@ -1,5 +1,6 @@
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import authenticate
 from staff.models import Staff
 from organizations.serializers import OrganizationSerializer
@@ -31,28 +32,24 @@ class LoginSerializer(serializers.Serializer):
 
                 # Ensure the user is associated with an organization
                 if organization is None:
-                    raise serializers.ValidationError(
-                        "User is not associated with any organization.")
+                    raise serializers.ValidationError("User is not associated with any organization.")
 
                 # Check if the organization is active
                 if not organization.is_active:
-                    raise serializers.ValidationError(
-                        "The associated organization is not active.")
+                    raise serializers.ValidationError("The associated organization is not active.")
 
             # User is associated with a Staff object
             if hasattr(user, 'staff'):
                 staff_instance = user.staff
-                org_serializer = OrganizationSerializer(
-                    staff_instance.organization)
-
+                org_serializer = OrganizationSerializer(staff_instance.organization)
                 data['staff_details'] = {
                     'first_name': staff_instance.first_name,
                     'last_name': staff_instance.last_name,
                     'designation': staff_instance.designation,
                     'organization': org_serializer.data
-                    # ... add any other fields you need ...
                 }
                 data['user_type'] = "staff"
+                data['user'] = user
                 return data
 
             # User is associated with a Customer object
@@ -62,18 +59,19 @@ class LoginSerializer(serializers.Serializer):
                     'first_name': customer_instance.first_name,
                     'last_name': customer_instance.last_name,
                     'phone': customer_instance.phone,
-                    'organization': customer_instance.organization,
-                    # ... add any other fields you need ...
+                    'organization': customer_instance.organization.name
                 }
                 data['user_type'] = "customer"
+                data['user'] = user
                 return data
 
             # User is not associated with either Staff or Customer, assume Admin
             else:
                 data['user_type'] = "admin"
+                data['user'] = user
                 return data
 
-        raise serializers.ValidationError("Incorrect Credentials.")
+        raise PermissionDenied("Incorrect password.")
 
 
 class StaffSerializer(serializers.ModelSerializer):

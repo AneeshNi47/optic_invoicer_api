@@ -1,6 +1,5 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .api import UserApi, LoginApi,PasswordResetRequestView,PasswordResetView
+from .api import UserApi, LoginApi, PasswordResetRequestView, PasswordResetView
 from knox import views as knox_views
 
 urlpatterns = [

@@ -14,30 +14,6 @@ from .serializers import PasswordResetRequestSerializer, PasswordResetSerializer
 
 
 class LoginApi(generics.GenericAPIView):
-    """
-    get:
-    Return a list of all items.
-
-    post:
-    Create a new item.
-
-    # Request Sample
-    ```
-    {
-        "name": "Item Name",
-        "description": "Item Description"
-    }
-    ```
-
-    # Response Sample
-    ```
-    {
-        "id": 1,
-        "name": "Item Name",
-        "description": "Item Description"
-    }
-    ```
-    """
     serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
