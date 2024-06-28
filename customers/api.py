@@ -1,40 +1,43 @@
 from .models import Customer, Prescription
+from django.db.models import Q
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from optic_invoicer_api.custom_cursor_pagination import CustomCursorPagination
-from .serializers import CustomerSerializer, PrescriptionSerializer,CustomerGetSerializer
+from .serializers import CustomerSerializer, PrescriptionSerializer, CustomerGetSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import connection
+
 
 class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+
     def get_serializer_class(self):
         if self.action == 'list':
             return CustomerSerializer
         elif self.action == 'retrieve':
             return CustomerGetSerializer
-        return super().get_serializer_class() 
+        return super().get_serializer_class()
 
     def get_queryset(self):
-        # Use the organization set in the middleware to filter customers
-        if self.request.get_organization():
-            return Customer.objects.filter(organization=self.request.get_organization())
-        else:
-            # Handle cases where there's no associated organization
-            return Customer.objects.none()
+        organization = self.request.get_organization()
+        if organization:
+            return Customer.objects.filter(organization=organization)
+        return Customer.objects.none()
 
     def perform_create(self, serializer):
-        # Associate the customer with the organization before saving
-        if not self.request.get_organization():
+        organization = self.request.get_organization()
+        if not organization:
             raise ValidationError("The user must belong to an organization to create a customer.")
-        serializer.save(organization=self.request.get_organization())
+        serializer.save(organization=organization)
 
     @action(detail=True, methods=['GET'])
     def prescriptions(self, request, pk=None):
         customer = self.get_object()
         prescriptions = Prescription.objects.filter(customer=customer)
         serializer = PrescriptionSerializer(prescriptions, many=True)
+        connection.close()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['POST'])
@@ -43,48 +46,53 @@ class CustomerViewSet(viewsets.ModelViewSet):
         serializer = PrescriptionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(customer=customer)
+            connection.close()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        connection.close()
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CustomerSearchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    """
-    Search customers based on email or phone.
-    """
 
     def get(self, request):
         organization = request.get_organization()
         phone = request.query_params.get('phone', None)
         email = request.query_params.get('email', None)
 
+        if not organization:
+            return Response({"error": "Organization not found."}, status=status.HTTP_400_BAD_REQUEST)
+
         if not (phone or email):
             return Response({"error": "Provide email or phone for searching."}, status=status.HTTP_400_BAD_REQUEST)
-        queryset = Customer.objects.filter(organization=organization)
-        if phone:
-            queryset = queryset.filter(phone__icontains=phone)
-        elif email:
-            queryset = queryset.filter(email__icontains=email)
 
-        
-        # Apply custom cursor pagination
+        query = Q(organization=organization)
+        if phone:
+            query &= Q(phone__icontains=phone)
+        if email:
+            query &= Q(email__icontains=email)
+
+        queryset = Customer.objects.filter(query)
+
         paginator = CustomCursorPagination()
         page = paginator.paginate_queryset(queryset, request)
-        
+
         if page is not None:
             serializer = CustomerGetSerializer(page, many=True)
+            connection.close()
             return paginator.get_paginated_response(serializer.data)
 
         serializer = CustomerGetSerializer(queryset, many=True)
+        connection.close()
         return Response(serializer.data)
-    
+
+
 class PrescriptionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PrescriptionSerializer
 
     def get_queryset(self):
-        # Use the organization set in the middleware to filter customers
-        if self.request.get_organization():
-            return Prescription.objects.filter(organization=self.request.get_organization())
-        else:
-            # Handle cases where there's no associated organization
-            return Prescription.objects.none()
+        organization = self.request.get_organization()
+        if organization:
+            return Prescription.objects.filter(organization=organization)
+        return Prescription.objects.none()

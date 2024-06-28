@@ -1,6 +1,7 @@
 from rest_framework.pagination import CursorPagination, _positive_int
 from rest_framework.settings import api_settings
 
+
 class CustomCursorPagination(CursorPagination):
     page_size = api_settings.PAGE_SIZE
     ordering = '-created_on'
