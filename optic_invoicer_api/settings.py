@@ -130,6 +130,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'optic_invoicer_api.custom_db_connection_manager.CloseOldConnectionsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'optic_invoicer_api.organization_middleware.OrganizationMiddleware',
 ]
