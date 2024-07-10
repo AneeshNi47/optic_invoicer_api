@@ -83,9 +83,17 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         float_fields = ['left_sphere', 'right_sphere', 'left_cylinder', 'right_cylinder',
                         'left_prism', 'right_prism', 'left_add', 'right_add',
                         'left_ipd', 'right_ipd']
-        for field in float_fields:
-            if field in data and isinstance(data[field], int):
-                data[field] = float(f"{data[field]:.2f}")
+
+        if isinstance(data, dict):
+            for field in float_fields:
+                if field in data and data[field] is not None:
+                    try:
+                        data[field] = float(data[field])
+                    except (ValueError, TypeError):
+                        raise serializers.ValidationError({field: "This field must be a number."})
+        else:
+            raise TypeError("Expected data to be a dictionary")
+
         return super().to_internal_value(data)
 
     def validate(self, data):

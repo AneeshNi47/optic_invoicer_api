@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework import routers
-from .api import InvoiceViewSet, CreateInvoiceView, InvoicePDFView, InvoicePaymentViewSet,InvoiceCustomerPDFView, GetInvoice
+from .api import InvoiceViewSet, CreateInvoiceView, InvoicePDFView, InvoicePaymentViewSet, InvoiceCustomerPDFView, GetInvoice
 
 router = routers.DefaultRouter()
 router.register('api/invoice', InvoiceViewSet, 'invoices')
@@ -14,5 +14,5 @@ urlpatterns = [
     path('api/invoice/re-calculate/', CreateInvoiceView.as_view(), name='re-calculate-invoices'),
     path('api/invoice/pdf/<uuid:invoice_id>/', InvoicePDFView.as_view(), name='invoice_pdf'),
     path('api/invoice/customer-pdf/<uuid:invoice_id>/', InvoiceCustomerPDFView.as_view(), name='invoice_customer_pdf'),
-  
+
 ] + router.urls

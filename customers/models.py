@@ -103,4 +103,4 @@ class Prescription(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.customer.first_name} on {self.created_on}"
+        return f"{self.customer.first_name} on {self.created_on}: {self.id}"
