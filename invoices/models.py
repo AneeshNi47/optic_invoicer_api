@@ -5,27 +5,28 @@ from django.contrib.auth.models import User
 from customers.models import Customer, Prescription
 from inventory.models import Inventory
 from datetime import datetime
- 
+
+
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     invoice_number = models.CharField(max_length=255, unique=True, blank=True)
     date = models.DateField(auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
     prescription = models.ForeignKey(Prescription, on_delete=models.SET_NULL, null=True, blank=True)
-    items=models.ManyToManyField(Inventory,related_name="inventory_items",null=True, blank=True,)
+    items = models.ManyToManyField(Inventory, related_name="inventory_items", null=True, blank=True,)
     remarks = models.TextField(null=True, blank=True)
     delivery_date = models.DateField(null=True, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    discount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True,default=0)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     advance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    PAYMENT_MODE_CHOICES = [    
+    PAYMENT_MODE_CHOICES = [
         ("Cash", "Cash"),
         ("Card", "Card"),
         ("Online", "Online"),
         ("Others", "Others")
     ]
     advance_payment_mode = models.CharField(max_length=10, choices=PAYMENT_MODE_CHOICES, default="Cash")
-    tax_percentage = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True,default=5)
+    tax_percentage = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=5)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     STATUS_CHOICES = [
         ("Created", "Created"),
@@ -47,7 +48,6 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} {self.customer.first_name} on {self.created_on}"
-
 
     def generate_invoice_number(self):
         # Extract the first four characters of the organization name
@@ -103,7 +103,6 @@ class InvoiceItem(models.Model):
             self.cost_value = self.inventory_item.cost_value
 
         super(InvoiceItem, self).save(*args, **kwargs)
-    
 
     def __str__(self):
         return f"{self.invoice.invoice_number} {self.inventory_item.name} > {self.quantity}"
@@ -112,8 +111,8 @@ class InvoiceItem(models.Model):
 class InvoicePayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     invoice_number = models.CharField(max_length=255, blank=True)
-    amount=models.DecimalField(max_digits=10, decimal_places=2)
-    invoice=models.ForeignKey(Invoice, related_name="invoice_payment", on_delete=models.CASCADE, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    invoice = models.ForeignKey(Invoice, related_name="invoice_payment", on_delete=models.CASCADE, null=True)
     PAYMENT_TYPE_CHOICES = [
         ("Advance", "Advance"),
         ("General", "General"),
@@ -128,7 +127,7 @@ class InvoicePayment(models.Model):
         ("Others", "Others")
     ]
     payment_mode = models.CharField(max_length=10, choices=PAYMENT_MODE_CHOICES, default="Cash")
-    remarks= models.TextField(null=True, blank=True)
+    remarks = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     # Default fields
@@ -138,13 +137,11 @@ class InvoicePayment(models.Model):
     updated_on = models.DateTimeField(auto_now=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
-
     def __str__(self):
         if self.invoice:
             return f"{self.invoice_number} {self.payment_type} > {self.amount}"
         else:
             return f"{self.invoice_number}"
-
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -184,14 +181,13 @@ class InvoicePayment(models.Model):
             return
 
         total_payments = sum(payment.amount for payment in self.invoice.invoice_payment.all() if payment.payment_type != "Advance")
-        self.invoice.balance = self.invoice.total - (total_payments +self.invoice.advance)
+        self.invoice.balance = self.invoice.total - (total_payments + self.invoice.advance)
 
         if self.invoice.balance < 0:
             raise ValueError("Total payments exceed the invoice amount")
         if self.invoice.balance == 0:
             self.invoice.status = "Paid"
         self.invoice.save()
-
 
     def delete(self, *args, **kwargs):
         if self.invoice.status in ["Delivered", "Scrapped"]:
