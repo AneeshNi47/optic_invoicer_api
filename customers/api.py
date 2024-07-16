@@ -22,9 +22,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         organization = self.request.get_organization()
-        if organization:
-            return Customer.objects.filter(organization=organization)
-        return Customer.objects.none()
+        phone = self.request.GET.get('phone')  # Retrieve the phone parameter from the URL
+        queryset = Customer.objects.filter(organization=organization) if organization else Customer.objects.none()
+
+        if phone:
+            print(phone)
+            queryset = queryset.filter(phone__icontains=phone)  # Add the phone filter if phone is present in the URL parameters
+
+        return queryset
 
     def perform_create(self, serializer):
         organization = self.request.get_organization()
